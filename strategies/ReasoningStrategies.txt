@@ -1,0 +1,2123 @@
+Here's a more comprehensive list of LLM reasoning strategies, from simple to
+  complex:
+
+  Single-Path Strategies
+  - Zero-shot — Direct answer, no examples or reasoning
+  - Few-shot — Provide examples before the question
+  - Chain-of-Thought (CoT) — "Think step by step" linear reasoning
+  - Zero-shot CoT — Just append "let's think step by step"
+  - Plan-and-Solve — Explicitly plan before solving
+  - Program-of-Thought (PoT) — Generate code to reason, execute for answer
+  - Chain-of-Code — Interleave natural language reasoning with code execution
+  - Scratchpad — Use a working memory area for intermediate calculations
+
+  Multi-Path / Sampling Strategies
+  - Self-Consistency (CoT-SC) — Sample multiple CoT paths, majority vote on answer
+  - Universal Self-Consistency — Same idea but for free-form (non-multiple-choice) answers
+  - Diverse Verifier on Reasoning Paths (DiVeRSe) — Multiple prompts + verification scoring
+
+  Tree / Graph Strategies
+  - Tree of Thought (ToT) — BFS/DFS over branching thought paths with evaluation
+  - Graph of Thought (GoT) — Arbitrary graph structure, allows merging reasoning paths
+  - Algorithm of Thought (AoT) — Embeds algorithmic exploration (like DFS) in a single prompt
+  - Beam Search Reasoning — Keep top-k paths at each step 
+
+  Self-Refinement Strategies
+  - Self-Refine — Generate, critique, revise in a loop
+  - Reflexion — Reflect on failures, store insights, retry with memory
+  - Self-Verify / Self-Debug — Generate answer, verify it, fix if wrong
+  - Chain-of-Verification (CoVe) — Generate, create verification questions, check, revise
+  - Cumulative Reasoning — Build up verified propositions incrementally
+
+  Decomposition Strategies
+  - Least-to-Most — Decompose into subproblems, solve easiest first, build up
+  - Decomposed Prompting (DecomP) — Route subproblems to specialized sub-solvers
+  - Successive Prompting — Iteratively decompose and solve one step at a time
+  - Skeleton-of-Thought — Generate answer outline first, fill in parallel
+
+  Retrieval-Augmented Reasoning
+  - RAG (Retrieval-Augmented Generation) — Retrieve relevant docs, reason over them
+  - Chain-of-Note — Generate reading notes on retrieved docs before answering
+  - Interleaved Retrieval CoT (IRCoT) — Alternate between retrieval and reasoning steps
+  - ReAct — Interleave Reasoning + Acting (tool use / search)
+
+  Multi-Agent / Debate Strategies
+  - LLM Debate — Multiple LLM instances argue, converge on answer
+  - Society of Mind — Specialized agents collaborate on subtasks
+  - Multi-Agent Discussion — Agents with different roles discuss to reach consensus
+  - ReConcile — Agents share confidence levels, discuss disagreements
+
+  Meta-Reasoning
+  - Step-Back Prompting — Ask a high-level/abstract question first, then solve
+  - Analogical Prompting — LLM generates its own relevant examples before solving
+  - Contrastive CoT — Provide both correct and incorrect reasoning examples
+  - Thread-of-Thought — "Walk me through this carefully" for long-context analysis
+  - Chain-of-Abstraction — Reason with abstract placeholders, fill in concrete details later
+
+  Verification / Reward Strategies
+  - Process Reward Models (PRM) — Score each reasoning step, not just final answer
+  - Outcome Reward Models (ORM) — Score final answers, select best
+  - MCTS + LLM — Monte Carlo Tree Search using LLM for expansion and evaluation
+
+  This is the landscape as of mid-2025. The field moves fast — many of these
+  emerged in 2023-2024 and new variations keep appearing. The general trend is
+toward combining multiple strategies (e.g., ReAct + ToT + Self-Refine).
+
+
+
+#####
+
+
+
+
+● MCTS + LLM (Monte Carlo Tree Search with Large Language Models)
+
+  What is MCTS?
+
+  MCTS is a search algorithm originally popularized by AlphaGo. It builds a  search tree incrementally by repeatedly doing four steps:
+
+  1. SELECT      — Walk down the tree picking promising nodes (balancing  exploration vs exploitation)
+  2. EXPAND      — Add a new child node (a new possible next step)
+  3. SIMULATE    — "Roll out" from that node to estimate how good it is
+  4. BACKPROPAGATE — Update all ancestor nodes with the result
+
+  How it combines with LLMs
+
+  In classical MCTS (like game AI), moves are well-defined and simulation means  playing random moves to the end. With LLMs, each piece maps to a reasoning  component:
+
+  MCTS Component: Node
+  Classical (AlphaGo): Board state
+  LLM Version: Partial reasoning state (text so far)
+  ────────────────────────────────────────
+  MCTS Component: Action/Edge
+  Classical (AlphaGo): Place a stone
+  LLM Version: Generate next reasoning step/thought
+  ────────────────────────────────────────
+  MCTS Component: Expansion
+  Classical (AlphaGo): Legal moves
+  LLM Version: LLM generates candidate next steps
+  ────────────────────────────────────────
+  MCTS Component: Simulation
+  Classical (AlphaGo): Random playout to end
+  LLM Version: LLM estimates answer quality (or completes the reasoning)
+  ────────────────────────────────────────
+  MCTS Component: Reward
+  Classical (AlphaGo): Win/loss
+  LLM Version: Correctness score, verifier model, or self-evaluation
+  ────────────────────────────────────────
+  MCTS Component: Selection policy
+  Classical (AlphaGo): UCB1 / PUCT
+  LLM Version: Same — balance exploring new paths vs exploiting known-good ones
+
+  Concrete example: solving a math problem
+
+  Root: "What is the integral of x*sin(x)?"
+  │
+  ├─ Step A: "Use integration by parts, let u=x, dv=sin(x)dx"
+  │   ├─ Step A1: "du=dx, v=-cos(x)" → score: 0.9 ✓
+  │   └─ Step A2: "du=dx, v=cos(x)"  → score: 0.1 ✗ (sign error)
+  │
+  ├─ Step B: "Use substitution u=sin(x)"
+  │   └─ Step B1: "du=cos(x)dx..." → score: 0.2 (dead end)
+  │
+  └─ Step C: "Use tabular integration"
+      └─ Step C1: "..." → score: 0.85 ✓
+
+  Each iteration:
+  1. Select: UCB1 picks Step A (highest value + exploration bonus)
+  2. Expand: LLM generates A1 and A2 as possible continuations
+  3. Simulate: LLM (or a verifier) scores each completed path
+  4. Backpropagate: Step A's value increases because A1 scored well
+
+  After enough iterations, follow the highest-value path to the answer.
+
+  Why it's powerful
+
+  vs Chain-of-Thought: CoT commits to one path. If step 3 of 10 is wrong,  everything after is wasted. MCTS can backtrack.
+
+  vs Tree of Thought: ToT is essentially a simplified version of this. MCTS adds  the statistical machinery (UCB1 selection, value estimates from rollouts) that  makes exploration more principled rather than relying on simple LLM
+  self-evaluation.
+
+  vs Self-Consistency: SC samples complete paths independently. MCTS is smarter —   it allocates more compute to promising branches rather than sampling blindly.
+
+  Key tradeoffs
+
+  - Cost: Expensive. Each node expansion and simulation is an LLM call. A single  problem might need hundreds of calls.
+  - Reward signal: The hardest part. You need a way to score partial/complete  reasoning. Options:
+    - Trained verifier model (Process Reward Model)
+    - LLM self-evaluation ("is this step correct?")
+    - Code execution (for math/code problems)
+    - Ground truth check (if available)
+  - When it shines: Hard problems where correctness matters more than latency —  math competitions, formal proofs, complex code generation, scientific  reasoning.
+
+  Notable implementations
+
+  - AlphaProof (DeepMind) — MCTS + LLM for mathematical theorem proving
+  - rStar / rStar-Math — Self-play mutual reasoning with MCTS
+  - LLM-MCTS (various papers) — General framework for reasoning tasks
+  - OpenAI's o1/o3 — While not confirmed to use MCTS specifically, the "test-time   compute scaling" approach is closely related — spending more inference compute   to search for better reasoning paths
+
+The core insight: treating reasoning as a search problem rather than a single  forward pass, and using principled exploration to find the best path through  thought-space.
+
+
+#####
+
+ AlphaProof (DeepMind, July 2024)
+
+  AlphaProof is DeepMind's system that solved 4 out of 6 problems at the 2024  International Mathematical Olympiad (IMO), achieving a silver medal equivalent.   It was the first AI system to reach this level of performance on competition
+  mathematics.
+
+  The core idea
+
+  AlphaProof combines three components:
+
+  Gemini LLM (formalization) + AlphaZero-style RL (search) + Lean 4  (verification)
+
+  The key insight: mathematical proofs can be verified mechanically, which gives  you a perfect reward signal — unlike most LLM tasks where evaluation is fuzzy.
+
+  How it works, step by step
+
+  1. Autoformalization (LLM layer)
+
+  Natural language math problems are translated into formal Lean 4 statements:
+
+  English: "Prove that for all positive integers n, n² + n is even"
+      ↓ Gemini fine-tuned for formalization
+  Lean 4: theorem imo_p1 (n : ℕ) (hn : 0 < n) : Even (n^2 + n)
+
+  This is hard — mathematical language is ambiguous, Lean syntax is precise.  DeepMind fine-tuned Gemini on a large corpus of informal↔formal math pairs.
+
+  2. Proof search (AlphaZero-style MCTS)
+
+  Once you have a formal statement, finding the proof becomes a search problem:
+
+  Root: theorem to prove
+  │
+  ├─ Tactic 1: "apply Nat.even_add.mpr"
+  │   ├─ Sub-tactic 1a: "constructor"
+  │   │   ├─ ... → proof complete ✓ (Lean verifies!)
+  │   │   └─ ... → stuck ✗
+  │   └─ Sub-tactic 1b: "simp" → stuck ✗
+  │
+  ├─ Tactic 2: "induction n"
+  │   └─ ... → still exploring
+  │
+  └─ Tactic 3: "omega" → doesn't apply ✗
+
+  This is where MCTS comes in:
+  - Nodes = partial proof states (remaining goals in Lean)
+  - Actions = proof tactics (the individual proof steps)
+  - Policy network = trained neural net that suggests which tactics to try (like  AlphaGo's move predictor)
+  - Value network = estimates likelihood of completing proof from current state
+  - Reward = binary, verified by Lean's type checker — the proof is correct or it   isn't
+
+  3. Lean 4 verification (the reward signal)
+
+  This is what makes AlphaProof fundamentally different from LLM reasoning:
+
+  LLM reasoning: "I think step 3 is correct" (might be wrong)
+  AlphaProof: Lean's kernel confirms step 3 is provably correct
+  ────────────────────────────────────────
+  LLM reasoning: Self-evaluation as reward signal (noisy)
+  AlphaProof: Formal verification as reward signal (perfect)
+  ────────────────────────────────────────
+  LLM reasoning: Can produce plausible-sounding nonsense
+  AlphaProof: Cannot — every step is machine-checked
+
+  4. Reinforcement learning loop
+
+  Before the competition, AlphaProof was trained through a self-improvement loop:
+
+  1. Start with a library of known formalized theorems
+  2. Generate variations / harder problems
+  3. Attempt proofs via MCTS
+  4. Successful proofs become training data
+  5. Update policy + value networks
+  6. Repeat (millions of iterations)
+
+  This is analogous to how AlphaZero played millions of games against itself to
+  improve at Go/Chess.
+
+  At competition time (IMO 2024)
+
+  Problem released (natural language)
+      ↓
+  Gemini formalizes into Lean 4 statement (multiple attempts, multiple  formalizations)
+      ↓
+  AlphaProof searches for proofs (massive parallel compute, hours per problem)
+      ↓
+  Lean 4 verifies any found proof
+      ↓
+  Translate back to human-readable proof for judges
+
+  Key detail: AlphaProof was given 3 days of compute per problem (the competition   gives humans 4.5 hours each for 3 problems per day). It solved:
+  - Problem 1 (algebra) — solved
+  - Problem 2 (algebra) — solved
+  - Problem 3 (combinatorics) — not solved
+  - Problem 4 (combinatorics) — not solved
+  - Problem 5 (number theory) — solved
+  - Problem 6 (combinatorics, hardest) — solved (notably, few humans solved this)
+
+  It struggled with combinatorics, which is harder to formalize.
+
+  Why this architecture matters
+
+  The formal verification advantage:
+  Normal LLM reasoning:  Generate → Hope it's right
+  Self-Refine:           Generate → LLM checks → Maybe catches errors
+  AlphaProof:            Generate → Lean proves correctness → Guaranteed right
+
+  There's no hallucination possible in the final output. Either Lean accepts the  proof or it doesn't.
+
+  The limitation: This only works for domains with formal verifiers. Math proofs  and program correctness have this property. Most real-world reasoning tasks  (legal analysis, medical diagnosis, business strategy) don't — which is why
+  this approach hasn't generalized beyond formal mathematics yet.
+
+  Relationship to other systems
+
+  - AlphaGo/AlphaZero — Same MCTS + RL architecture, different domain (games →  proofs)
+  - AlphaGeometry (DeepMind, Jan 2024) — Solved geometry problems, but used a  different approach (neuro-symbolic, not MCTS)
+  - o1/o3 (OpenAI) — Test-time compute scaling for general reasoning, but without   formal verification, so it can still hallucinate
+  - Lean-STaR, ReProver — Academic proof search systems, smaller scale
+
+The big open question: can this verify-and-search paradigm be extended beyond  formal math into domains where you can construct partial verifiers?
+
+
+#####
+
+
+ AlphaGeometry (DeepMind, January 2024)
+
+  AlphaGeometry solves Olympiad-level geometry problems at near-gold-medal level.
+   It solved 25 out of 30 IMO geometry problems from 2000-2024, compared to the
+  average gold medalist solving 25.9.
+
+  Why geometry is special
+
+  Geometry proofs have a unique structure that allows a different approach than
+  AlphaProof:
+
+  Given: Triangle ABC with circumcircle ω, midpoint M of BC...
+  Prove: Points X, Y, Z are collinear
+
+  The challenge isn't symbolic manipulation (like algebra) — it's discovering the
+   right auxiliary constructions. A human geometer's insight is often "draw line
+  PQ" or "construct the midpoint of arc BC," and then the proof follows
+  naturally.
+
+  The architecture: neuro-symbolic hybrid
+
+  Symbolic Deduction Engine (DD+AR)  ←→  Language Model (auxiliary construction
+  generator)
+           "What can I prove?"              "What should I construct?"
+
+  Two components working in a loop:
+
+  1. Symbolic Deduction Engine (Deductive Database + Algebraic Reasoning)
+
+  A classical, deterministic engine that:
+  - Takes the given geometric facts
+  - Applies known geometry rules exhaustively (angle chasing, parallel lines,
+  cyclic quadrilaterals, similar triangles, etc.)
+  - Derives everything that can be logically concluded from current known facts
+
+  Given: AB = AC, M is midpoint of BC
+      ↓ DD+AR applies rules
+  Derives: ∠ABM = ∠ACM (isosceles triangle)
+  Derives: AM ⊥ BC (perpendicular bisector)
+  Derives: BM = MC (midpoint definition)
+  Derives: △ABM ≅ △ACM (SAS)
+  ... hundreds more derived facts
+
+  This is exhaustive but limited — it can only derive things from existing points
+   and lines. It can't invent new constructions.
+
+  2. Language Model (trained transformer)
+
+  When the deduction engine gets stuck (can't reach the goal), the LM suggests a
+  new auxiliary construction:
+
+  Current state: [all known facts, target goal, failed attempts]
+      ↓ Language model
+  Suggestion: "Construct point E as the reflection of A over midpoint M of BC"
+
+  This new point gets added to the diagram, and the deduction engine runs again
+  with the expanded set of objects.
+
+  The solving loop
+
+                      ┌──────────────────────┐
+                      │  Problem statement    │
+                      └──────────┬───────────┘
+                                 ↓
+                      ┌──────────────────────┐
+              ┌──────│  Deduction Engine     │
+              │      │  (exhaustive search)  │
+              │      └──────────┬───────────┘
+              │                 ↓
+              │        Goal proved? ──── YES ──→ Output proof
+              │                 │
+              │                 NO
+              │                 ↓
+              │      ┌──────────────────────┐
+              │      │  Language Model       │
+              │      │  suggests auxiliary   │
+              │      │  construction         │
+              │      └──────────┬───────────┘
+              │                 ↓
+              └────── Add construction to
+                      known facts, repeat
+
+  Typically solves problems in 1-3 auxiliary constructions. Sometimes zero — the
+  deduction engine alone handles simpler problems.
+
+  Training the language model
+
+  This is the clever part. There's no large dataset of geometry proofs with
+  auxiliary constructions annotated. So DeepMind created synthetic training data:
+
+  Synthetic data generation process:
+  1. Start with random points (e.g., A, B, C, D, E)
+  2. Apply random constructions (midpoint, perpendicular, circle, etc.)
+  3. Run the deduction engine → discovers many true statements
+  4. For each discovered statement:
+     a. Remove one of the constructed points (say E)
+     b. Now the statement can't be proved without E
+     c. Training example: (premises + goal) → "construct point E as..."
+  5. Repeat millions of times
+
+  This is essentially reverse engineering — you start with a rich diagram, find
+  interesting true statements, then remove a point to create a problem that
+  requires rediscovering that point.
+
+  They generated 100 million synthetic proofs this way.
+
+  Concrete example
+
+  Problem: Given triangle ABC with incircle touching BC at D. M is midpoint of
+  BC. Prove that the midpoint of AD lies on the line through M parallel to the
+  angle bisector from A.
+
+  Step 1: Deduction engine derives everything from given facts
+          → Can't reach the goal
+
+  Step 2: LM suggests "Construct E, the midpoint of AD"
+          → Deduction engine runs again
+          → Still can't fully prove it
+
+  Step 3: LM suggests "Construct the second intersection F of the
+           angle bisector from A with the circumcircle"
+          → Deduction engine runs again
+          → Derives that F is the midpoint of arc BC
+          → Derives FM passes through E
+          → Goal proved ✓
+
+  What makes it different from AlphaProof
+
+  Column 1: Domain
+  AlphaProof: General math (algebra, number theory, combinatorics)
+  AlphaGeometry: Geometry only
+  ────────────────────────────────────────
+  Column 1: Search method
+  AlphaProof: MCTS (millions of rollouts)
+  AlphaGeometry: Loop between deduction + LM suggestions
+  ────────────────────────────────────────
+  Column 1: Verification
+  AlphaProof: Lean 4 proof assistant
+  AlphaGeometry: Built-in symbolic deduction engine
+  ────────────────────────────────────────
+  Column 1: LM role
+  AlphaProof: Suggests proof tactics
+  AlphaGeometry: Suggests auxiliary constructions
+  ────────────────────────────────────────
+  Column 1: Compute at solve time
+  AlphaProof: Hours/days, massive parallel
+  AlphaGeometry: Seconds to minutes
+  ────────────────────────────────────────
+  Column 1: Why it works
+  AlphaProof: RL self-play + formal verification
+  AlphaGeometry: Geometry has rich deductive structure that a symbolic engine
+    exploits
+
+  Why the neuro-symbolic split works so well here
+
+  What symbolic engines are good at: Exhaustive, correct logical deduction. Never
+   makes mistakes. Can chain hundreds of geometry rules.
+
+  What symbolic engines are bad at: Creative leaps. "Where should I draw a new
+  line?" has an infinite search space.
+
+  What LMs are good at: Pattern recognition, intuition, suggesting plausible
+  constructions based on what "looks like" it would help.
+
+  What LMs are bad at: Rigorous multi-step deduction without errors.
+
+  By splitting the work, each component handles what it's best at. The LM never
+  needs to do correct deduction (the engine handles that). The engine never needs
+   to be creative (the LM handles that).
+
+  AlphaGeometry 2 (July 2024)
+
+  Released alongside AlphaProof for IMO 2024. Improvements:
+  - Gemini-based LM (larger, more capable) instead of the original smaller
+  transformer
+  - Expanded symbolic engine with more geometry rules
+  - Solved Problem 4 at IMO 2024 (the geometry problem) in 19 seconds
+  - Solves 28/30 historical IMO geometry problems (up from 25/30)
+
+  The broader lesson
+
+  AlphaGeometry demonstrates that you don't always need end-to-end neural
+  approaches. When a domain has strong existing symbolic tools, the most
+  effective architecture may be a thin neural layer on top that provides the
+  "intuition" the symbolic system lacks. This is a counterpoint to the trend of
+throwing bigger LLMs at everything.
+
+
+#####
+
+ AlphaCode (DeepMind, February 2022) & AlphaCode 2 (December 2023)
+
+  AlphaCode is DeepMind's system for competitive programming — the kind of
+  problems on Codeforces where you're given a complex problem statement and must
+  write a correct, efficient program.
+
+  The problem space
+
+  Competitive programming is different from typical code generation:
+
+  Typical LLM code task:          "Write a function to reverse a string"
+  Competitive programming:         "Given a tree of N nodes where each node has a
+   value,
+                                    find the minimum cost to partition it into
+  paths
+                                    such that no two adjacent paths have the same
+   parity
+                                    of their maximum values. N ≤ 2×10⁵"
+
+  These problems require:
+  - Understanding a complex, often tricky problem statement
+  - Identifying the right algorithmic approach (DP, graph theory, number theory,
+  greedy, etc.)
+  - Implementing it correctly with edge cases handled
+  - Meeting strict time/memory limits
+
+  AlphaCode 1 (February 2022)
+
+  Result: Estimated top 54% on Codeforces (roughly 1238 rating — average
+  competitor level)
+
+  Architecture: massive sampling + filtering
+
+  The core insight was brute force with intelligence:
+
+  Problem statement
+      ↓
+  Large transformer model (fine-tuned on code)
+      ↓
+  Generate ~1,000,000 candidate solutions
+      ↓
+  Filter by: compiles? passes example test cases?
+      ↓
+  ~10,000 remaining
+      ↓
+  Cluster into ~10 groups by behavioral similarity
+      ↓
+  Submit 1 solution per cluster (10 submissions allowed)
+
+  Step by step
+
+  1. Pre-training
+
+  A standard transformer (encoder-decoder) pre-trained on:
+  - 715 GB of public GitHub code
+  - Multiple languages (Python, C++, Java, etc.)
+
+  2. Fine-tuning
+
+  Fine-tuned on competitive programming specifically:
+  - ~13,000 problems from Codeforces with their solutions
+  - Problem description → correct solution pairs
+  - Trained to generate both Python and C++ solutions
+
+  3. Massive sampling
+
+  For each problem, generate an enormous number of candidate solutions:
+
+  Temperature sampling with high diversity
+      → ~1,000,000 programs per problem
+      → Yes, one million
+
+  This is the key difference from how humans or ChatGPT approach coding. Instead
+  of trying to write one correct solution, generate a massive population and
+  filter.
+
+  4. Filtering
+
+  1,000,000 generated programs
+      ↓ Does it compile?
+  ~100,000 remaining
+      ↓ Does it pass the example test cases from the problem statement?
+  ~10,000 remaining
+
+  5. Clustering and selection
+
+  The remaining ~10,000 programs might have many near-duplicates. AlphaCode
+  clusters them:
+
+  Run each program on generated test inputs
+      ↓
+  Programs that produce identical outputs on all test inputs → same cluster
+      ↓
+  ~10 distinct clusters
+      ↓
+  Pick one representative from each cluster
+      ↓
+  Submit (Codeforces allows 10 submissions)
+
+  This ensures diversity in submissions — if your first approach is wrong, maybe
+  a fundamentally different approach in another cluster is right.
+
+  6. Test input generation
+
+  To create the test inputs for clustering, they trained a separate model to
+  generate valid test cases from the problem constraints. This is non-trivial —
+  inputs must satisfy complex structural constraints.
+
+  Why this works (and why it's surprising)
+
+  Human programmer:  Read → Think → Identify algorithm → Implement → Debug
+  AlphaCode:         Read → Generate 1M attempts → Filter → Cluster → Pick
+  diverse set
+
+  It doesn't "understand" algorithms in the traditional sense. It's pattern
+  matching at massive scale — having seen thousands of DP problems, it can
+  generate plausible DP solutions, and the filtering removes the wrong ones.
+
+  AlphaCode 2 (December 2023)
+
+  Result: Estimated top 15% on Codeforces (~1650 rating — above average,
+  approaching "expert")
+
+  Major architectural leap, built on Gemini Pro.
+
+  Key changes from v1
+
+  1. Powered by Gemini
+
+  Replaced the custom transformer with Gemini Pro, giving much stronger base
+  reasoning.
+
+  2. Dramatically fewer samples needed
+
+  AlphaCode 1:  ~1,000,000 samples per problem
+  AlphaCode 2:  ~100 - 1,000,000 samples (adaptive, usually far fewer)
+
+  3. Two-phase approach: policy then search
+
+  Phase 1: GENERATE (Gemini fine-tuned model)
+      Problem → Generate candidate solutions (much fewer than v1)
+
+  Phase 2: SCORE & SELECT (separate scoring model)
+      Each candidate → scored by a trained evaluator
+      Pick highest-scored solutions
+
+  The scoring model was trained to predict whether a solution is correct, which
+  is much cheaper than actually running it.
+
+  4. Problem decomposition
+
+  AlphaCode 2 can reason about the problem before coding:
+
+  Problem statement
+      ↓
+  "This looks like a segment tree problem with lazy propagation"
+      ↓
+  Generate solutions focused on that approach
+      ↓
+  Also generate some alternatives in case the classification was wrong
+
+  5. Dynamic sample allocation
+
+  Easy problem detected → generate ~100 samples
+  Hard problem detected → generate up to 1,000,000 samples
+
+  How it compares to other code AI
+
+  System: Copilot/GPT-4
+  Approach: Single-shot generation
+  Level: Solves easy-medium problems
+  ────────────────────────────────────────
+  System: AlphaCode 1
+  Approach: Massive sampling + filtering
+  Level: Top 54% Codeforces
+  ────────────────────────────────────────
+  System: AlphaCode 2
+  Approach: Gemini + scoring model
+  Level: Top 15% Codeforces
+  ────────────────────────────────────────
+  System: o1/o3 (OpenAI)
+  Approach: Extended reasoning, fewer samples
+  Level: ~1900+ rating (reported)
+  ────────────────────────────────────────
+  System: Human expert
+  Approach: Deep algorithmic understanding
+  Level: Top 1% = 2400+ rating
+
+  The philosophical debate
+
+  AlphaCode raised an interesting question about what "solving" means:
+
+  Critics say:
+  - Generating a million solutions and filtering isn't "reasoning"
+  - A human solves with 1 attempt; AlphaCode needs 1,000,000
+  - It can't explain its solution or debug interactively
+  - It doesn't generalize — it pattern-matches to training problems
+
+  Proponents say:
+  - The output is correct, efficient code that passes hidden tests
+  - Filtering is a form of reasoning — it's search through solution space
+  - Humans also do implicit search (consider and reject approaches mentally)
+  - The clustering is genuinely clever — it finds diverse algorithmic strategies
+
+  Key limitations
+
+  Can't do truly novel algorithms: If a problem requires an approach that doesn't
+   resemble anything in training data, AlphaCode fails. The hardest Codeforces
+  problems (2400+ rating) often require novel combinations.
+
+  No interactive debugging: A human programmer runs their code, sees wrong
+  output, reasons about why, and fixes it. AlphaCode just generates more samples.
+
+  Compute cost: Even AlphaCode 2 uses orders of magnitude more compute per
+  problem than a single GPT-4 call. This matters for practical applications.
+
+  Problem format dependency: Works on well-defined competitive programming with
+  clear input/output specs and test cases. Doesn't transfer to real-world
+  software engineering where requirements are ambiguous.
+
+  The legacy
+
+  AlphaCode's biggest contribution may be conceptual — it showed that test-time
+  compute scaling (spending more inference compute to search for better answers)
+  is a powerful paradigm. This idea influenced later systems like o1 and the
+  broader shift toward "thinking harder" rather than just "knowing more."
+
+  The progression tells a story:
+  AlphaCode 1 (2022):  Brute force sampling, weak model, million samples
+  AlphaCode 2 (2023):  Smarter model (Gemini), scoring, fewer samples needed
+  Future:              Even smarter models may need very few samples + targeted
+  search
+
+  As models get stronger, you need less search. But for hard problems at the
+frontier, search remains essential.
+
+
+####
+
+
+ AlphaEvolve (DeepMind, May 2025)
+
+  AlphaEvolve is DeepMind's system for automated scientific and mathematical
+  discovery. Instead of solving a specific problem instance (like AlphaProof
+  proves one theorem), it evolves better algorithms and constructions — finding
+  improvements to open problems in mathematics, computer science, and
+  engineering.
+
+  The core idea
+
+  Traditional LLM:     Human asks question → LLM generates answer
+  AlphaProof:          Given theorem → search for proof
+  AlphaEvolve:         Given optimization objective → evolve increasingly better
+  programs
+
+  AlphaEvolve treats discovery as program optimization. It represents candidate
+  solutions as code, then uses LLMs to iteratively mutate and improve them,
+  guided by an evaluator.
+
+  Architecture
+
+  ┌─────────────────────────────────────────────────┐
+  │                  Program Database                │
+  │  (population of candidate programs, scored)      │
+  └──────────┬──────────────────────┬───────────────┘
+             │                      ↑
+             ↓                      │
+  ┌──────────────────┐   ┌──────────────────────┐
+  │  Prompt Sampler   │   │  Evaluation Pipeline  │
+  │  (selects parent  │   │  (runs program,       │
+  │   programs +      │   │   scores output)      │
+  │   context)        │   │                       │
+  └────────┬─────────┘   └──────────┬────────────┘
+           ↓                        ↑
+  ┌──────────────────────────────────┐
+  │         Gemini LLM(s)            │
+  │  (generates mutated/improved     │
+  │   versions of programs)          │
+  └──────────────────────────────────┘
+
+  The evolutionary loop
+
+  1. Prompt Sampler
+
+  Selects "parent" programs from the database to inspire the next generation:
+
+  Pick from the population:
+    - Some high-scoring programs (exploitation)
+    - Some diverse/novel programs (exploration)
+    - Some recently improved programs (momentum)
+
+  Build a prompt:
+    "Here is the current best program and its score.
+     Here are some other attempts and their scores.
+     Here is the objective function.
+     Generate an improved version."
+
+  This is where it differs from random mutation — the LLM understands the code
+  semantically and can make intelligent modifications.
+
+  2. LLM Generation (Gemini)
+
+  Multiple Gemini models (both Flash and Pro) generate candidate improvements:
+
+  # Parent program (score: 0.73)
+  def construct_matrix(n):
+      matrix = np.eye(n)
+      for i in range(n):
+          matrix[i][(i+1) % n] = 1
+      return matrix
+
+  # LLM generates mutated child (might score 0.78)
+  def construct_matrix(n):
+      matrix = np.eye(n)
+      for i in range(n):
+          matrix[i][(i+1) % n] = 1
+          matrix[i][(i+2) % n] = -1  # LLM's creative addition
+      return matrix
+
+  Key: the LLM doesn't just randomly flip tokens. It reasons about what the code
+  does, what the objective is, and what change might help. This is semantically
+  meaningful mutation, unlike traditional evolutionary algorithms.
+
+  3. Evaluation Pipeline
+
+  Each candidate program is run and scored automatically:
+
+  Generated program
+      ↓ Execute it
+      ↓ Measure against objective function
+      ↓ Score: 0.78
+      ↓ Store in database with score
+
+  The evaluator is problem-specific but always automated — the human defines what
+   "better" means, AlphaEvolve searches for it.
+
+  4. Population Management
+
+  The program database maintains diversity:
+
+  Population:
+    [Program A: score 0.95, age: 500 generations]
+    [Program B: score 0.91, age: 200 generations]
+    [Program C: score 0.88, age: 10 generations, novel approach]
+    ...
+
+  Selection pressure: high-scoring programs survive
+  Diversity pressure: keep structurally different approaches alive
+
+  What it discovered
+
+  This is the remarkable part — AlphaEvolve made genuine contributions:
+
+  1. Cap set problem (pure mathematics)
+
+  The cap set problem asks: what's the largest set of points in high-dimensional
+  space where no three are collinear?
+
+  Previous best known construction for certain dimensions
+      ↓ AlphaEvolve
+  New larger constructions found — improving bounds on an open problem
+
+  This was a result that human mathematicians hadn't found despite decades of
+  effort.
+
+  2. Matrix multiplication algorithms
+
+  Finding algorithms to multiply matrices with fewer operations than the standard
+   method:
+
+  Standard (Strassen): 7 multiplications for 2×2 matrices
+  AlphaEvolve: Found improved schemes for specific matrix sizes
+               that beat previously known constructions
+
+  Related to the earlier AlphaTensor work (2022) but using evolution rather than
+  RL.
+
+  3. Google infrastructure optimization
+
+  Applied internally at Google:
+
+  - Data center scheduling: Found better heuristics for job scheduling that
+  reduced compute waste
+  - Hardware design: Improved chip layout algorithms used in TPU design
+  - Hashing algorithms: Discovered better hash functions for specific data
+  distributions
+
+  4. Kissing numbers and packing problems
+
+  How many spheres can touch a central sphere in N dimensions? AlphaEvolve found
+  improved constructions for certain dimensions.
+
+  5. Sorting networks
+
+  Found smaller sorting networks (fewer comparators) for specific input sizes,
+  improving on results that had stood for years.
+
+  Why LLM-based evolution beats traditional approaches
+
+  Traditional evolutionary algorithm:
+  # Mutation: random token-level changes
+  program = "matrix[i][(i+1) % n] = 1"
+  # Random mutation might produce:
+  mutated = "matrix[i][(i+1) % n] = 2"  # Just changed a constant
+  # or broken:
+  mutated = "matrix[i][(i+1) % x] = 1"  # Undefined variable
+
+  AlphaEvolve (LLM-based evolution):
+  # Mutation: semantically meaningful changes
+  program = "matrix[i][(i+1) % n] = 1"
+  # LLM understands this is cyclic adjacency and might produce:
+  mutated = """
+  for i in range(n):
+      for j in range(1, k):  # Generalize to k-hop adjacency
+          matrix[i][(i+j) % n] = weights[j]
+  """
+
+  The LLM brings:
+  - Semantic understanding of what the code does
+  - Cross-domain knowledge from training data (math papers, algorithms textbooks)
+  - High-level restructuring (not just point mutations)
+  - Ability to explain its changes (though this isn't always used)
+
+  How it compares to related systems
+
+  System: AlphaEvolve
+  What it does: Evolves programs/constructions
+  Search method: LLM-guided evolution
+  Domain: Open-ended discovery
+  ────────────────────────────────────────
+  System: FunSearch (DeepMind, 2023)
+  What it does: AlphaEvolve's predecessor
+  Search method: LLM-guided evolution
+  Domain: Math (cap sets, bin packing)
+  ────────────────────────────────────────
+  System: AlphaProof
+  What it does: Proves specific theorems
+  Search method: MCTS + RL
+  Domain: Formal math proofs
+  ────────────────────────────────────────
+  System: AlphaCode
+  What it does: Writes competition code
+  Search method: Massive sampling + filtering
+  Domain: Competitive programming
+  ────────────────────────────────────────
+  System: AlphaTensor
+  What it does: Finds matrix multiplication algorithms
+  Search method: RL (no LLM)
+  Domain: Tensor decomposition
+
+  FunSearch → AlphaEvolve evolution
+
+  FunSearch (December 2023) was the direct predecessor:
+
+  FunSearch:
+    - Single Codey model (PaLM-based)
+    - Evolves a single function
+    - Island-based population model
+    - Proved concept on cap sets + bin packing
+
+  AlphaEvolve:
+    - Multiple Gemini models (Flash + Pro, ensemble)
+    - Evolves entire programs (multi-function, multi-file)
+    - More sophisticated population management
+    - Richer prompt construction (diffs, history, context)
+    - Applied to much broader range of problems
+    - Integrated into real production systems
+
+  The key design decisions
+
+  Why programs, not mathematical objects directly?
+
+  Evolving a matrix directly:     [[0,1,0],[1,0,1],[0,1,0]] → hard to mutate
+  meaningfully
+  Evolving a program that builds  def build(): ... → LLM can reason about
+  construction logic
+  the matrix:
+
+  Programs are a natural representation for LLMs (trained on code), and they
+  compress structured objects — a short program can describe a huge mathematical
+  construction.
+
+  Why multiple models?
+
+  Gemini Flash:  Fast, cheap, good for small mutations (local tweaks)
+  Gemini Pro:    Slower, expensive, good for large restructurings (creative
+  leaps)
+
+  Run both in parallel → diverse mutations at different scales
+
+  Why population-based, not single-trajectory?
+
+  Maintaining a diverse population prevents getting stuck in local optima:
+
+  Population might contain:
+    - Approach A: algebraic construction (score 0.90)
+    - Approach B: probabilistic method (score 0.85)
+    - Approach C: geometric construction (score 0.70, but novel)
+
+  Approach C might eventually surpass A and B
+  if A and B are near their ceiling
+
+  Limitations
+
+  Requires automated evaluation: The objective function must be computable. You
+  can't use AlphaEvolve for problems where "better" requires human judgment.
+
+  Compute intensive: Major discoveries took significant compute — not something
+  you run on a laptop.
+
+  Not guaranteed to find anything: It's a heuristic search. For some problems it
+  finds improvements; for others it spins without progress.
+
+  Interpretability challenge: The evolved programs work but may not be
+  human-understandable. A discovered construction might be verified but the "why
+  it works" requires separate mathematical analysis.
+
+  Novelty vs optimization: It's strongest at optimizing known types of
+  constructions. Truly paradigm-shifting mathematical ideas (inventing a new
+  field) are beyond its scope.
+
+  The bigger picture
+
+  AlphaEvolve represents a shift in how AI contributes to science:
+
+  Phase 1 (pre-2020):   AI as calculator/tool (run simulations, crunch data)
+  Phase 2 (2020-2023):  AI as assistant (help write proofs, suggest approaches)
+  Phase 3 (2024+):      AI as discoverer (autonomously find new results)
+
+  The key philosophical point: AlphaEvolve's discoveries are verifiable but not
+  explainable by the system itself. It found a better cap set construction, but
+  it can't tell you why it works — that understanding still requires human
+  mathematicians. It's an oracle that says "try this" and is often right, but
+can't say why.
+
+
+####
+
+
+AlphaTensor (DeepMind, October 2022)
+
+  AlphaTensor discovers novel algorithms for matrix multiplication — finding ways
+   to multiply matrices using fewer operations than previously known. Published
+  in Nature, it was the first AI system to discover genuinely new algorithms for
+  a fundamental computational task.
+
+  Why matrix multiplication matters
+
+  Matrix multiplication is one of the most important operations in computing:
+
+  Used in: graphics, physics simulations, neural networks, signal processing,
+           compression, scientific computing, basically everything
+
+  A tiny improvement in matrix multiplication efficiency propagates across
+  all of computer science and engineering
+
+  The naive algorithm for multiplying two N×N matrices uses N³ multiplications.
+  In 1969, Strassen shocked the math world by showing 2×2 matrices could be done
+  in 7 multiplications instead of 8. The question since: what's the minimum
+  number of multiplications for any given matrix size?
+
+  This is an open problem in mathematics — we don't know the optimal answer for
+  most sizes.
+
+  The connection to tensors
+
+  Here's the deep mathematical insight that makes AlphaTensor work. Any matrix
+  multiplication algorithm can be represented as a tensor decomposition.
+
+  What this means concretely:
+
+  Multiplying two 2×2 matrices:
+
+  [a b] × [e f] = [ae+bg  af+bh]
+  [c d]   [g h]   [ce+dg  cf+dh]
+
+  This operation can be encoded as a 3D tensor (a cube of numbers). Each way of
+  decomposing this tensor into a sum of "rank-1" terms corresponds to a valid
+  matrix multiplication algorithm. The number of rank-1 terms = the number of
+  scalar multiplications needed.
+
+  Tensor T (encodes the multiplication rules)
+      ↓ Decompose into
+  T = sum of R rank-1 terms
+      ↓
+  R = number of multiplications in the algorithm
+      ↓
+  Minimize R = find the most efficient algorithm
+
+  Naive algorithm: 8 rank-1 terms (8 multiplications for 2×2)
+  Strassen: 7 rank-1 terms (7 multiplications — proving tensor rank ≤ 7)
+
+  Finding the minimum tensor rank is NP-hard in general. This is what makes it a
+  perfect target for AI search.
+
+  The architecture: single-player game via RL
+
+  AlphaTensor's key insight: reformulate tensor decomposition as a game.
+
+  ┌─────────────────────────────────────┐
+  │           Game State                │
+  │                                     │
+  │  Current tensor T_remaining         │
+  │  (what's left to decompose)         │
+  │                                     │
+  │  Goal: reduce T_remaining to zero   │
+  └─────────────────────────────────────┘
+
+  Game rules:
+
+  State:   The remaining tensor (starts as the full multiplication tensor)
+  Action:  Choose a rank-1 term to subtract from the tensor
+  Win:     Tensor becomes all zeros (valid decomposition found)
+  Score:   Fewer moves = better algorithm (fewer multiplications)
+
+  Each "move" in the game is choosing three vectors (u, v, w) that define a
+  rank-1 tensor, and subtracting it:
+
+  Turn 1: T_remaining = T_original
+          Player chooses (u₁, v₁, w₁)
+          T_remaining = T_original - u₁⊗v₁⊗w₁
+
+  Turn 2: Player chooses (u₂, v₂, w₂)
+          T_remaining = T_remaining - u₂⊗v₂⊗w₂
+
+  ...
+
+  Turn R: T_remaining = 0  →  Done! Algorithm uses R multiplications
+
+  The action space is enormous. For multiplying 4×4 matrices, the tensor is
+  16×16×16 = 4096 entries, and each action involves choosing three 16-dimensional
+   vectors. Even restricting to integer entries in {-2,-1,0,1,2}, there are
+  billions of possible actions per turn.
+
+  Training: AlphaZero-style RL
+
+                      ┌─────────────┐
+                      │  Game State  │
+                      │  (tensor)    │
+                      └──────┬──────┘
+                             ↓
+                      ┌─────────────┐
+                      │ Neural Net   │
+                      │              │
+                      │ Policy head: │──→ Which rank-1 term to try next
+                      │ Value head:  │──→ How many more steps to finish
+                      └──────┬──────┘
+                             ↓
+                      ┌─────────────┐
+                      │    MCTS     │
+                      │  (search)   │
+                      └──────┬──────┘
+                             ↓
+                      Select action, update tensor, repeat
+
+  Neural network architecture:
+
+  - Input: the current remaining tensor (3D array)
+  - Transformer-based architecture
+  - Policy head: predicts promising (u, v, w) triples
+  - Value head: estimates minimum remaining moves
+
+  Training loop:
+
+  1. Play games (attempt tensor decompositions) using current network + MCTS
+  2. Record: states visited, actions taken, outcomes
+  3. Train network to:
+     - Predict actions that led to good outcomes (policy)
+     - Predict number of remaining moves (value)
+  4. Repeat for millions of games
+
+  No human examples needed — pure self-play, like AlphaZero learning chess from
+  scratch.
+
+  Key technical innovations
+
+  1. Synthetic symmetries
+
+  Matrix multiplication has mathematical symmetries — you can swap the order of
+  operands, transpose, permute indices. AlphaTensor exploits this:
+
+  If algorithm A works for multiplying (M×N) by (N×P):
+    → Transform A to get algorithms for (N×P) by (P×M), etc.
+    → Each discovery multiplies into several algorithms for free
+
+  2. Action space factorization
+
+  Instead of choosing (u, v, w) jointly from a huge space:
+
+  Naive: choose from |action_space|³ possibilities simultaneously
+
+  AlphaTensor: factorize the decision
+    Step 1: choose u  (policy over first vector)
+    Step 2: choose v  (policy over second vector, conditioned on u)
+    Step 3: choose w  (policy over third vector, conditioned on u, v)
+
+  This reduces the branching factor dramatically.
+
+  3. Curriculum of tensor sizes
+
+  Start training on small tensors (2×2 × 2×2 multiplication)
+      ↓ Transfer learned patterns
+  Move to larger tensors (3×3, 4×4, 4×5, etc.)
+      ↓ Each stage builds on previous knowledge
+  Scale up gradually
+
+  What it discovered
+
+  Beating Strassen and beyond:
+
+  Matrix size: 2×2
+  Naive: 8 mults
+  Previous best: 7 (Strassen, 1969)
+  AlphaTensor: 7 (matched)
+  ────────────────────────────────────────
+  Matrix size: 3×3
+  Naive: 27 mults
+  Previous best: 23 (various)
+  AlphaTensor: 23 (matched)
+  ────────────────────────────────────────
+  Matrix size: 4×4
+  Naive: 64 mults
+  Previous best: 49 (Strassen recursive)
+  AlphaTensor: 47 (new!)
+  ────────────────────────────────────────
+  Matrix size: 4×5
+  Naive: 80 mults
+  Previous best: 58
+  AlphaTensor: 47 (new!)
+  ────────────────────────────────────────
+  Matrix size: 5×5
+  Naive: 125 mults
+  Previous best: 91
+  AlphaTensor: 76 (new!)
+  ────────────────────────────────────────
+  Matrix size: Modular arithmetic variants
+  Naive: —
+  Previous best: —
+  AlphaTensor: Many new records
+
+  For 4×4 matrices, AlphaTensor found an algorithm using 47 multiplications —
+  beating the 49 that Strassen's method gives when applied recursively. This was
+  a result that had eluded mathematicians for 50+ years.
+
+  Particularly striking: Some discoveries were over finite fields (modular
+  arithmetic, e.g., mod 2), which is relevant to cryptography, coding theory, and
+   theoretical computer science. AlphaTensor found improvements for dozens of
+  tensor sizes over Z/2Z that no one had found before.
+
+  A concrete discovered algorithm (simplified)
+
+  For 2×2 over Z/2Z (mod 2 arithmetic), AlphaTensor found a decomposition using
+  only 6 multiplications instead of 7:
+
+  Standard (Strassen needs 7 multiplications over integers):
+    m1 = (a+b)(e+f)
+    m2 = (a+d)(e+h)
+    ... 7 terms total
+
+  AlphaTensor over Z/2Z (6 multiplications):
+    m1 = (a+b)(f+h)
+    m2 = (a+c+d)(e+f+h)
+    m3 = (b+c+d)(e+f+g)
+    m4 = (a+b+c+d)(e+f)
+    m5 = c·g
+    m6 = d·h
+
+    Result matrix entries reconstructed from m1...m6 via additions
+
+  This is provably correct (every entry of the product matrix computes correctly
+  mod 2) and uses one fewer multiplication than Strassen.
+
+  Why this is mathematically significant
+
+  The exponent of matrix multiplication (denoted ω) is one of the most important
+  open problems in theoretical CS:
+
+  Naive:    O(n³)         →  ω ≤ 3
+  Strassen: O(n^2.807)    →  ω ≤ 2.807
+  Current:  O(n^2.371...)  →  ω ≤ 2.371... (Alman-Williams, 2024)
+  Conjecture: ω = 2       →  Would mean matrix multiplication is essentially
+  linear
+
+  Every improvement in small matrix multiplication algorithms potentially leads
+  to improvements in the exponent. AlphaTensor's discoveries don't directly
+  improve the asymptotic bound, but they advance our understanding of the
+  structure of these algorithms and provide practical improvements for real
+  hardware.
+
+  Hardware-aware optimization
+
+  A second phase of AlphaTensor optimized not just for fewest multiplications but
+   for fastest execution on real hardware:
+
+  Standard goal:   minimize number of multiplications
+  Hardware goal:   minimize actual wall-clock time on GPU/TPU
+
+  These differ because:
+    - Memory access patterns matter
+    - Parallelism matters
+    - Some operations are faster than others on specific hardware
+
+  AlphaTensor found algorithms that were 10-20% faster on TPUs than existing
+  implementations, even when they used the same number of multiplications — by
+  reorganizing the computation to better match hardware parallelism.
+
+  Comparison to DeepMind's other systems
+
+  System: AlphaTensor (2022)
+  Approach: RL + MCTS as single-player game
+  What it finds: Matrix multiplication algorithms
+  ────────────────────────────────────────
+  System: AlphaCode (2022)
+  Approach: Massive sampling + filtering
+  What it finds: Solutions to coding problems
+  ────────────────────────────────────────
+  System: FunSearch (2023)
+  Approach: LLM-guided evolution
+  What it finds: Better constructions (cap sets, bin packing)
+  ────────────────────────────────────────
+  System: AlphaGeometry (2024)
+  Approach: Neuro-symbolic (LM + deduction engine)
+  What it finds: Geometry proofs
+  ────────────────────────────────────────
+  System: AlphaProof (2024)
+  Approach: MCTS + RL + Lean 4
+  What it finds: General math proofs
+  ────────────────────────────────────────
+  System: AlphaEvolve (2025)
+  Approach: LLM-guided program evolution
+  What it finds: Algorithms, constructions, optimizations
+
+  AlphaTensor → AlphaEvolve connection
+
+  AlphaEvolve later revisited matrix multiplication and found further
+  improvements beyond AlphaTensor. The key difference:
+
+  AlphaTensor:  Tensor decomposition as a game → RL learns to play
+                (domain-specific architecture, trained from scratch)
+
+  AlphaEvolve:  "Write a program that constructs a decomposition" → LLM evolves
+  the program
+                (general-purpose, leverages pre-trained LLM knowledge)
+
+  AlphaEvolve's advantage: it can incorporate human mathematical intuition from
+  the LLM's training data, while AlphaTensor had to discover everything from
+  scratch through self-play. But AlphaTensor's advantage was that its
+  representation was more tightly structured for this specific problem.
+
+  The broader lesson
+
+  AlphaTensor demonstrated that fundamental algorithms we've used for decades may
+   not be optimal, and AI search can find improvements humans missed. Matrix
+  multiplication had been studied intensively since 1969 — yet an RL system found
+   better algorithms within months of training.
+
+  This raises the question: how many other "solved" algorithmic problems have
+hidden improvements waiting to be discovered?
+
+
+
+####
+
+AlphaFold (DeepMind, 2018-2024)
+
+  AlphaFold predicts the 3D structure of proteins from their amino acid sequence.
+   It's arguably DeepMind's most impactful system — it solved a 50-year grand
+  challenge in biology and won the 2024 Nobel Prize in Chemistry for Demis
+  Hassabis and John Jumper.
+
+  Why protein structure matters
+
+  Proteins are molecular machines that do almost everything in biology:
+
+  Hemoglobin:     carries oxygen in blood
+  Insulin:        regulates blood sugar
+  Antibodies:     fight infections
+  Enzymes:        catalyze chemical reactions
+  Receptors:      receive signals on cell surfaces
+
+  A protein is a chain of amino acids (20 types). The chain folds into a specific
+   3D shape, and the shape determines the function:
+
+  Amino acid sequence (1D):  M-A-L-W-M-R-L-L-P-L-L-A-L-L-A-L-W-G...
+                                      ↓ folds in milliseconds
+  3D structure:              A complex, specific 3D shape
+                                      ↓ shape enables
+  Function:                  Binds to target, catalyzes reaction, etc.
+
+  The protein folding problem: Given a sequence of amino acids, predict the 3D
+  structure it folds into.
+
+  Why it was so hard
+
+  The search space is astronomically large:
+
+  A typical protein: ~300 amino acids
+  Each amino acid has ~2 backbone angles that matter (φ, ψ)
+  Even discretizing each angle into just 3 positions:
+    3^600 ≈ 10^286 possible conformations
+
+  The universe has ~10^80 atoms.
+
+  Levinthal's paradox (1969): if a protein tried one conformation per picosecond,
+   it would take longer than the age of the universe to find the right fold. Yet
+  real proteins fold in milliseconds. Physics finds the answer instantly;
+  computing it was the problem.
+
+  Previous methods:
+
+  Method: X-ray crystallography
+  How it works: Grow protein crystal, shoot X-rays
+  Limitation: Months to years, $100K+, many proteins won't crystallize
+  ────────────────────────────────────────
+  Method: Cryo-EM
+  How it works: Freeze protein, electron microscope
+  Limitation: Expensive, slow, limited resolution
+  ────────────────────────────────────────
+  Method: NMR spectroscopy
+  How it works: Magnetic resonance on protein in solution
+  Limitation: Only works for small proteins
+  ────────────────────────────────────────
+  Method: Molecular dynamics
+  How it works: Simulate physics atom by atom
+  Limitation: Computationally intractable for most proteins
+  ────────────────────────────────────────
+  Method: Homology modeling
+  How it works: Copy structure from similar known protein
+  Limitation: Only works if a close relative exists
+
+  By 2020, humanity had experimentally determined ~170,000 protein structures
+  over 50+ years. There are ~200 million known protein sequences. The gap was
+  enormous.
+
+  CASP: the competition
+
+  The Critical Assessment of protein Structure Prediction (CASP) is a biennial
+  blind competition since 1994. Organizers collect experimentally solved
+  structures that haven't been published yet, give teams just the sequences, and
+  compare predictions to the hidden true structures.
+
+  Scoring uses GDT (Global Distance Test): roughly, what fraction of the
+  predicted atom positions are within a few angstroms of the true positions.
+  Score of ~90+ GDT is considered comparable to experimental accuracy.
+
+  CASP history:
+    1994-2016:  Best teams slowly improved, ~40 GDT on hard targets
+    CASP12 (2016): Best groups ~40 GDT on hard targets
+    CASP13 (2018): AlphaFold 1 enters → ~60 GDT (huge jump, won competition)
+    CASP14 (2020): AlphaFold 2 → ~92 GDT (effectively solved the problem)
+    CASP15 (2022): AlphaFold and competitors near ceiling
+
+  AlphaFold 1 (2018)
+
+  The first version, entered in CASP13:
+
+  Sequence → predict distance map (2D matrix of pairwise distances)
+      ↓
+  Distance map → optimize 3D structure to match predicted distances
+
+  Architecture:
+  - Deep residual neural network
+  - Input: multiple sequence alignment (MSA) — align related protein sequences
+  from evolution
+  - Output: predicted distance between every pair of amino acid residues
+  - Then gradient descent to find 3D coordinates that satisfy those distances
+
+  Won CASP13 decisively but wasn't "solved" — accuracy was good but not
+  experimental quality.
+
+  AlphaFold 2 (2020) — The breakthrough
+
+  Completely new architecture. This is the one that changed biology.
+
+  Input processing
+
+  Protein sequence: "MALWMRLLPLLALLAL..."
+           ↓
+  ┌────────────────────────────────────────────┐
+  │  1. Search genetic databases               │
+  │     (UniRef, BFD, MGnify)                  │
+  │     Find evolutionarily related sequences  │
+  │     → Multiple Sequence Alignment (MSA)    │
+  │                                            │
+  │  2. Search structure databases             │
+  │     (PDB)                                  │
+  │     Find known structures of relatives     │
+  │     → Template structures                  │
+  └────────────────────────────────────────────┘
+
+  Why evolution helps:
+
+  Position 50 is always Cysteine  }  These two positions are probably
+  Position 120 is always Cysteine }  close in 3D (disulfide bond)
+
+  When position 50 mutates,       }  These positions co-evolve
+  position 120 also mutates       }  because they're physically interacting
+
+  Co-evolutionary signals in the MSA encode 3D proximity information. This is the
+   key biological insight AlphaFold exploits.
+
+  The Evoformer (core innovation)
+
+  The heart of AlphaFold 2 is the Evoformer — a novel neural architecture with
+  two interacting representations:
+
+  ┌─────────────────────┐     ┌─────────────────────┐
+  │   MSA Representation │←───→│  Pair Representation │
+  │   (N_seq × L × 256)  │     │   (L × L × 128)      │
+  │                       │     │                       │
+  │   Row = one sequence  │     │   Entry (i,j) =       │
+  │   Column = position   │     │   relationship between │
+  │   in alignment        │     │   residue i and j      │
+  └─────────────────────┘     └─────────────────────┘
+           ↕ exchange information ↕
+
+      48 Evoformer blocks (each refines both representations)
+
+  MSA representation: Each row is a related sequence, each column is an alignment
+   position. Attention operates both within rows (sequence context) and within
+  columns (evolutionary conservation).
+
+  Pair representation: A matrix where entry (i,j) encodes the predicted
+  relationship between amino acid i and amino acid j — distance, relative
+  orientation, etc.
+
+  The crucial exchange: Information flows between both representations:
+
+  MSA → Pair:   "Positions 50 and 120 co-evolve" → "Residues 50 and 120 are
+  likely close"
+  Pair → MSA:   "Residues 30-40 form a helix" → update sequence representation
+  accordingly
+
+  This bidirectional flow over 48 blocks iteratively refines the understanding of
+   both evolutionary patterns and structural relationships.
+
+  Structure Module
+
+  After the Evoformer, a structure module converts the abstract representations
+  into actual 3D coordinates:
+
+  Pair representation (L × L × 128)
+      ↓
+  Initialize each residue as a rigid body "frame"
+  (position + orientation in 3D space)
+      ↓
+  Iteratively update frames using:
+    - Invariant Point Attention (IPA)
+    - Attention that respects 3D geometry
+      ↓
+  8 iterations of refinement
+      ↓
+  Final 3D coordinates for every atom
+
+  Invariant Point Attention (IPA) is a key innovation — it's an attention
+  mechanism that operates in 3D space but is invariant to rotations and
+  translations. This means the network doesn't have to learn that a protein is
+  the same whether it's facing left or right.
+
+  Recycling
+
+  The entire network runs 3 times, feeding its output back as input:
+
+  Run 1: Evoformer → Structure Module → initial 3D structure
+      ↓ feed predicted structure back as input
+  Run 2: Evoformer → Structure Module → refined structure
+      ↓ feed back again
+  Run 3: Evoformer → Structure Module → final structure
+
+  Each cycle refines the prediction, similar to iterative refinement in human
+  problem-solving.
+
+  Training
+
+  Training data: ~170,000 experimentally determined structures from PDB
+  Loss function: combination of
+    - FAPE (Frame Aligned Point Error): 3D coordinate accuracy
+    - Distogram loss: pairwise distance accuracy
+    - Masked MSA loss: can it predict masked amino acids (self-supervised)
+    - Confidence prediction: does it know when it's uncertain
+
+  Hardware: 128 TPUv3 cores for ~1 week
+
+  Confidence prediction
+
+  AlphaFold outputs a per-residue confidence score (pLDDT, 0-100):
+
+  pLDDT > 90:   Very high confidence (reliable at atomic level)
+  70 < pLDDT < 90: Confident (good backbone, side chains less certain)
+  50 < pLDDT < 70: Low confidence (rough fold might be right)
+  pLDDT < 50:   Very low (likely disordered / no stable structure)
+
+  This was crucial for practical utility — scientists know which parts of the
+  prediction to trust.
+
+  Impact: the AlphaFold Protein Structure Database
+
+  In 2021-2022, DeepMind partnered with EMBL-EBI to predict structures for
+  essentially all known proteins:
+
+  Before AlphaFold:  ~170,000 experimentally solved structures (50 years of work)
+  AlphaFold DB:      ~200,000,000 predicted structures (released over months)
+
+  Predicted structures for:
+  - The entire human proteome (~20,000 proteins)
+  - Model organisms (mouse, fruit fly, E. coli, rice, etc.)
+  - Essentially every protein in UniProt
+
+  All released open-source. This was transformative for biology — researchers
+  worldwide suddenly had structural information for proteins they'd never been
+  able to study.
+
+  AlphaFold 3 (May 2024)
+
+  Extended beyond proteins to predict the structure of all biomolecular
+  interactions:
+
+  AlphaFold 2: Protein → 3D structure
+  AlphaFold 3: Protein + DNA + RNA + small molecules + ions + modifications
+               → 3D structure of the entire complex
+
+  Key architectural change: diffusion
+
+  AlphaFold 3 replaced the structure module with a diffusion model:
+
+  AlphaFold 2 structure module:
+    Deterministic: predict coordinates directly via IPA
+
+  AlphaFold 3 diffusion module:
+    Start with random atom positions (noise)
+        ↓ iterative denoising (like image diffusion models)
+    Gradually refine into the correct 3D structure
+
+  Why diffusion? It naturally handles:
+  - Uncertainty: sample multiple structures to see conformational diversity
+  - Flexibility: some regions genuinely have multiple valid conformations
+  - Non-protein molecules: small molecules, DNA, RNA don't have the regular
+  backbone geometry that IPA was designed for
+
+  What AlphaFold 3 can predict
+
+  Protein-protein complexes:    How two proteins bind together
+  Protein-DNA interactions:     How transcription factors bind DNA
+  Protein-RNA interactions:     Ribosome structure, RNA-binding proteins
+  Protein-ligand binding:       How drug molecules bind to targets
+  Post-translational modifications: Glycosylation, phosphorylation effects
+  Ion coordination:             Metal ion binding sites
+
+  This is directly relevant to drug discovery — predicting how a drug candidate
+  binds to its target protein.
+
+  Drug discovery implications
+
+  Traditional:    Synthesize compound → test experimentally → iterate (years,
+  $billions)
+  With AF3:       Predict binding computationally → prioritize best candidates →
+  test winners
+
+  DeepMind spun out Isomorphic Labs specifically to apply AlphaFold 3 to drug
+  discovery, with partnerships with Eli Lilly and Novartis.
+
+  Limitations
+
+  What AlphaFold doesn't do:
+
+  - Dynamics: Proteins move and flex. AlphaFold predicts a static snapshot, not
+  the movie
+  - Folding pathway: It predicts the final structure, not how the protein gets
+  there
+  - Intrinsically disordered proteins: ~30% of human proteins have regions with
+  no stable structure. AlphaFold correctly identifies these (low pLDDT) but can't
+   predict their behavior
+  - Effects of mutations: Predicting how a single mutation changes structure is
+  unreliable
+  - Conformational changes: Many proteins switch between multiple shapes
+  (allosteric regulation). AlphaFold typically predicts one
+  - Membrane environments: Proteins in cell membranes behave differently than in
+  solution
+  - AF3 accuracy on small molecules: Ligand binding prediction is good but not
+  yet at the level needed to replace experimental methods in drug design
+
+  The Nobel Prize context (2024)
+
+  Demis Hassabis and John Jumper shared the 2024 Nobel Prize in Chemistry with
+  David Baker (who developed Rosetta and protein design methods). The citation
+  was for "computational protein structure prediction."
+
+  50-year timeline:
+    1972: Anfinsen wins Nobel for showing sequence determines structure
+          (the problem is defined)
+    1994: CASP competition begins (benchmarking progress)
+    2018: AlphaFold 1 (step change in accuracy)
+    2020: AlphaFold 2 (problem effectively solved)
+    2024: Nobel Prize awarded
+
+  Comparison to other DeepMind systems
+
+  System: AlphaFold
+  Domain: Protein structure
+  Core technique: Custom architecture (Evoformer + IPA/diffusion)
+  Output: 3D atomic coordinates
+  ────────────────────────────────────────
+  System: AlphaTensor
+  Domain: Matrix multiplication
+  Core technique: RL + MCTS game
+  Output: Algorithms
+  ────────────────────────────────────────
+  System: AlphaProof
+  Domain: Math theorems
+  Core technique: RL + MCTS + Lean 4
+  Output: Formal proofs
+  ────────────────────────────────────────
+  System: AlphaEvolve
+  Domain: General discovery
+  Core technique: LLM-guided evolution
+  Output: Programs/constructions
+
+  AlphaFold is unique among these — it's the most domain-specific (custom
+  architecture for biology), had the most practical impact, and was the most
+  decisively successful (going from "unsolved problem" to "solved" in a single
+  system).
+
+  The broader lesson
+
+  AlphaFold showed that domain-specific architecture design matters enormously.
+  The Evoformer wasn't a generic transformer — it was specifically designed
+  around the biology of protein evolution and the physics of protein structure.
+  The MSA-pair representation exchange, IPA, and recycling were all motivated by
+  deep understanding of the problem domain.
+
+  This contrasts with the trend toward general-purpose foundation models. For
+  some problems, understanding the domain and building that understanding into
+  the architecture still dramatically outperforms throwing a bigger general model
+at it.
+
+
+
+
+####
+
+ AlphaGo (DeepMind, 2015-2017)
+
+  AlphaGo is the system that defeated the world champion at Go, a moment widely
+  considered the "Sputnik moment" for modern AI. It spawned the entire
+  Alpha-series of systems and proved that AI could master domains requiring
+  intuition, not just brute-force calculation.
+
+  Why Go was the grand challenge
+
+  After Deep Blue beat Kasparov at chess in 1997, Go became the benchmark for AI:
+
+  Chess:                          Go:
+  8×8 board, ~30 legal moves      19×19 board, ~250 legal moves
+  ~10^47 possible games            ~10^170 possible games
+  Pieces have defined values       Stones are all identical
+  Clear material advantage         Positional, holistic evaluation
+  Brute-force search works         Brute-force search impossible
+
+  The number 10^170 is incomprehensible — there are ~10^80 atoms in the
+  observable universe. You cannot search the Go game tree exhaustively. Period.
+
+  Why traditional AI failed at Go:
+
+  Chess approach: Minimax + alpha-beta pruning
+  Why it fails at Go: Branching factor ~250 makes this intractable
+  ────────────────────────────────────────
+  Chess approach: Hand-crafted evaluation function
+  Why it fails at Go: Go positions can't be scored by simple rules — experts
+    describe evaluation as "feeling" or "intuition"
+  ────────────────────────────────────────
+  Chess approach: Opening books
+  Why it fails at Go: Opening theory in Go is vast and context-dependent
+  ────────────────────────────────────────
+  Chess approach: Endgame tables
+  Why it fails at Go: Go endgames are themselves complex
+
+  Before AlphaGo, the best Go programs played at strong amateur level (~5-6 dan
+  amateur), roughly equivalent to a club player. Professional players (9-dan pro)
+   considered them trivially beatable.
+
+  The game of Go — quick primer
+
+  Rules (deceptively simple):
+    1. Black and white alternate placing stones on intersections
+    2. Stones with no adjacent empty points ("liberties") are captured
+    3. You can't recreate the immediately previous board position (ko rule)
+    4. Game ends when both players pass
+    5. Score = territory (empty intersections you control) + captured stones
+
+  Strategy (infinitely deep):
+    - Influence vs territory (broad power projection vs concrete ownership)
+    - Life and death (which groups can survive, which are dead)
+    - Sente/gote (who has initiative)
+    - Shape and efficiency (elegant vs wasteful stone placement)
+    - Ko fights (complex tactical exchanges)
+    - Reading (calculating specific sequences 20-50+ moves deep)
+
+  Professional Go players study for decades. The game has ~2,500 years of
+  accumulated theory.
+
+  AlphaGo versions timeline
+
+  AlphaGo Fan     (Oct 2015)  — Beat Fan Hui (European champion) 5-0
+  AlphaGo Lee     (Mar 2016)  — Beat Lee Sedol (world top 5) 4-1
+  AlphaGo Master  (Jan 2017)  — Beat 60 top professionals online 60-0
+  AlphaGo Zero    (Oct 2017)  — Beat AlphaGo Lee 100-0, trained without human
+  data
+  AlphaZero       (Dec 2017)  — Generalized: mastered Go, chess, and shogi from
+  scratch
+
+  AlphaGo Fan/Lee — the original architecture
+
+  Four components working together:
+
+  1. Policy network (supervised learning from human games)
+
+  Input:  Board position (19×19 grid + features)
+  Output: Probability distribution over all 361 intersections
+          "Where would a strong human play?"
+
+  Training data: ~30 million positions from expert games on KGS Go server
+  Architecture:  13-layer convolutional neural network
+  Accuracy:      ~57% at predicting human expert moves
+
+  This alone played at a strong amateur level — just predicting the most likely
+  human move is already a decent strategy.
+
+  2. Policy network (reinforcement learning)
+
+  Take the supervised policy network and improve it by self-play:
+
+  SL policy network (trained on human games)
+      ↓ play millions of games against itself
+  RL policy network (stronger than human-trained version)
+
+  Method: REINFORCE (policy gradient)
+    - Play a game to completion
+    - If you won: increase probability of all moves played
+    - If you lost: decrease probability of all moves played
+
+  The RL policy network beat the SL policy network ~80% of the time.
+
+  3. Value network
+
+  Input:  Board position
+  Output: Single number: probability that the current player wins
+          "Who's ahead in this position?"
+
+  Training: On positions from RL self-play games
+  Architecture: Similar CNN to policy network, but outputs one number
+
+  This is the evaluation function that chess programs had hand-crafted, but
+  AlphaGo learned from data. It's the network that learned "intuition" — looking
+  at a position and estimating who's winning without reading out specific
+  sequences.
+
+  4. Monte Carlo Tree Search (MCTS)
+
+  All three networks feed into MCTS at game time:
+
+  Current position
+      ↓
+  ┌─────────────────────────────────────────────────┐
+  │                    MCTS                          │
+  │                                                  │
+  │  SELECT:  Walk down tree using UCB formula       │
+  │           that balances policy prior (neural net  │
+  │           recommendation) vs visit count          │
+  │           (exploration)                           │
+  │                                                  │
+  │  EXPAND:  At leaf node, use policy network       │
+  │           to assign prior probabilities to        │
+  │           child nodes                             │
+  │                                                  │
+  │  SIMULATE: Evaluate leaf using combination of    │
+  │           - Value network (board evaluation)      │
+  │           - Fast rollout (random playout to end   │
+  │             using a small, fast policy)           │
+  │                                                  │
+  │  BACKPROPAGATE: Update statistics up the tree    │
+  │                                                  │
+  │  After thousands of simulations:                 │
+  │  Pick the most-visited root child as the move    │
+  └─────────────────────────────────────────────────┘
+
+  The interplay is key:
+
+  Policy network:  "These 5 moves are worth considering" (narrows search)
+  Value network:   "This position looks good for black" (evaluates without
+  playing to end)
+  MCTS:            Combines both to search deeply along promising lines
+
+  Without the neural networks, MCTS considers too many bad moves. Without MCTS,
+  the neural networks can't look ahead. Together, they achieve superhuman play.
+
+  Compute at game time (vs Lee Sedol)
+
+  Hardware:     1,202 CPUs + 176 GPUs (distributed across multiple machines)
+  Per move:     ~1 million MCTS simulations
+  Time:         ~1-2 minutes per move
+  Compared to:  Chess engines search billions of positions per move
+                AlphaGo searches far fewer but each evaluation is much richer
+
+  The Lee Sedol match (March 2016, Seoul)
+
+  The most famous AI event since Deep Blue vs Kasparov:
+
+  Game 1: AlphaGo wins by resignation
+          (Lee Sedol: "I was very surprised")
+
+  Game 2: AlphaGo wins by resignation
+          Move 37: AlphaGo plays a move on the 5th line shoulder hit
+          that no human would play — violated centuries of Go theory
+          Professional commentators thought it was a mistake
+          It turned out to be brilliant
+          (Experts: "A beautiful move... not a human move")
+
+  Game 3: AlphaGo wins by resignation
+          (Lee Sedol: "I am speechless")
+
+  Game 4: Lee Sedol wins
+          Move 78: "God's touch" — Lee Sedol plays an extraordinary
+          wedge move that exposed a weakness in AlphaGo's search
+          AlphaGo's value network misevaluated the position
+          (The world celebrated — humanity still had something to offer)
+
+  Game 5: AlphaGo wins by resignation
+          Final score: 4-1 AlphaGo
+
+  Move 37 of Game 2 became iconic. AlphaGo's policy network gave it a 1-in-10,000
+   probability — meaning almost no human would play it. But the value network
+  confirmed it was strong, and MCTS verified it led to good outcomes. The move
+  worked by building vast influence across the board in a way that contradicted
+  human positional judgment.
+
+  Fan Hui, the commentator (and first professional AlphaGo beat), said he cried —
+   not from sadness, but because the move was so beautiful.
+
+  AlphaGo Zero (October 2017) — the leap
+
+  Threw away everything human:
+
+  AlphaGo Lee:                    AlphaGo Zero:
+    Trained on human games          No human data at all
+    Separate policy + value nets    Single unified network
+    CNN architecture                ResNet architecture
+    Handcrafted input features      Raw board only (black/white/empty)
+    Fast rollouts in MCTS           No rollouts — value network only
+    Months of training              3 days to surpass AlphaGo Lee
+                                    40 days to surpass all previous versions
+
+  Architecture
+
+  Input: 19×19×17 (current board + 8 history positions × 2 colors + color to
+  play)
+      ↓
+  40 residual blocks (ResNet)
+      ↓
+  ┌─────────────┐  ┌──────────────┐
+  │ Policy head  │  │  Value head   │
+  │ p(move)      │  │  v(position)  │
+  │ 362 outputs  │  │  1 output     │
+  │ (361 + pass) │  │  [-1, +1]     │
+  └─────────────┘  └──────────────┘
+
+  Single network, two outputs. Simpler, faster, stronger.
+
+  Training loop
+
+  1. Initialize network with random weights
+     (knows nothing — plays random moves)
+
+  2. Self-play: play games using current network + MCTS
+     Record (position, MCTS move probabilities, game outcome)
+
+  3. Train network on self-play data:
+     - Policy target: MCTS move probabilities (not the raw network output)
+     - Value target: did this player win the game?
+
+  4. Replace current network with trained network
+
+  5. Repeat from step 2 (~5 million games total)
+
+  The crucial insight: MCTS acts as a policy improvement operator. The raw
+  network might suggest move A, but after MCTS searches thousands of variations,
+  it discovers move B is better. Training the network to predict MCTS's improved
+  policy makes the raw network stronger, which makes MCTS even stronger with the
+  better network, creating a virtuous cycle:
+
+  Weak network → MCTS improves its moves → Train network on MCTS moves
+      → Stronger network → MCTS improves further → Train again
+      → Even stronger → ...
+      → Superhuman
+
+  Learning curve
+
+  Training time    Elo rating    Equivalent to
+  ───────────────────────────────────────────────
+  0 hours          ~0            Random play
+  3 hours          ~1,000        Weak amateur
+  12 hours         ~2,500        Strong amateur
+  36 hours         ~4,000        AlphaGo Fan level
+  72 hours         ~5,000        AlphaGo Lee level (beat Lee Sedol)
+  ~40 days         ~5,200        Strongest version ever
+
+  In 40 days, starting from random play, AlphaGo Zero surpassed all accumulated
+  human Go knowledge by discovering strategies humans hadn't found in 2,500
+  years.
+
+  What it discovered independently
+
+  Human Go knowledge rediscovered:
+    - Standard openings (star point, 3-4 point, 3-3 point)
+    - Joseki (corner patterns) — many standard, some novel
+    - Life-and-death patterns
+    - Influence-based strategies
+
+  Novel strategies:
+    - New joseki variations now adopted by human professionals
+    - Unconventional opening patterns (early 3-3 invasion)
+    - Different valuation of influence vs territory
+    - Some moves that professionals initially dismissed as mistakes
+      but later recognized as correct
+
+  Professional Go was permanently changed. Moves that were "wrong" for centuries
+  turned out to be strong. Young professionals now study AlphaGo games as part of
+   their training.
+
+  AlphaZero (December 2017) — generalization
+
+  Same algorithm, three different games:
+
+  AlphaGo Zero:  Specific to Go
+  AlphaZero:     Same algorithm works for Go, chess, and shogi (Japanese chess)
+
+  Chess:   Surpassed Stockfish (strongest chess engine) after 4 hours
+  Shogi:   Surpassed Elmo (strongest shogi engine) after 2 hours
+  Go:      Surpassed AlphaGo Zero after 30 hours
+
+  AlphaZero vs Stockfish was particularly striking because Stockfish represented
+  decades of chess-specific engineering — hand-tuned evaluation functions,
+  opening books, endgame tables, highly optimized search. AlphaZero used none of
+  this, just learned from self-play, and played a more creative, dynamic style
+  that chess experts found beautiful.
+
+  The impact on AI beyond games
+
+  AlphaGo's ideas propagated across all of DeepMind's later work:
+
+  AlphaGo concept          →  Where it appeared later
+  ──────────────────────────────────────────────────────
+  Neural network + MCTS     →  AlphaProof (math proofs)
+  Self-play RL              →  AlphaTensor (matrix multiplication)
+  Value/policy networks     →  AlphaCode (code generation scoring)
+  Learning without human    →  AlphaFold 2 (some self-supervised components)
+  data (Zero approach)
+  Search + evaluation       →  Every "Alpha" system uses this pattern
+
+  The philosophical significance
+
+  What AlphaGo showed:
+
+  1. Intuition can be learned. Go masters described their skill as intuition — a
+  feeling for good shapes, positions, flow. AlphaGo demonstrated that this
+  "intuition" is pattern recognition that can be captured in neural networks.
+  2. Human knowledge is not the ceiling. AlphaGo Zero proved that human game
+  knowledge — 2,500 years of accumulated theory — was actually a limitation, not
+  an asset. Training from scratch produced a stronger player.
+  3. Search + evaluation is a universal paradigm. The MCTS + neural network
+  pattern works wherever you can define a clear objective and simulate outcomes.
+  This became the template for applying AI to science.
+  4. AI can be creative. Move 37 wasn't optimization — it was a genuinely novel
+  strategic idea that expanded human understanding of the game. This challenged
+  the view that AI can only be derivative.
+
+  Comparison across the Alpha series
+
+  System: AlphaGo Fan
+  Year: 2015
+  Game/Domain: Go
+  Human data?: Yes (human games)
+  Key innovation: CNN + MCTS for Go
+  ────────────────────────────────────────
+  System: AlphaGo Lee
+  Year: 2016
+  Game/Domain: Go
+  Human data?: Yes
+  Key innovation: Scaled up, beat world champion
+  ────────────────────────────────────────
+  System: AlphaGo Zero
+  Year: 2017
+  Game/Domain: Go
+  Human data?: No
+  Key innovation: Self-play only, surpassed all
+  ────────────────────────────────────────
+  System: AlphaZero
+  Year: 2017
+  Game/Domain: Go, chess, shogi
+  Human data?: No
+  Key innovation: Generalized across games
+  ────────────────────────────────────────
+  System: MuZero
+  Year: 2019
+  Game/Domain: Atari, Go, chess
+  Human data?: No
+  Key innovation: Learned the rules too (model-based)
+  ────────────────────────────────────────
+  System: AlphaFold
+  Year: 2020
+  Game/Domain: Protein structure
+  Human data?: Yes (PDB structures)
+  Key innovation: Domain-specific architecture
+  ────────────────────────────────────────
+  System: AlphaTensor
+  Year: 2022
+  Game/Domain: Matrix multiplication
+  Human data?: No
+  Key innovation: Math as single-player game
+  ────────────────────────────────────────
+  System: AlphaCode
+  Year: 2022
+  Game/Domain: Programming
+  Human data?: Yes (Codeforces)
+  Key innovation: Massive sampling + filtering
+  ────────────────────────────────────────
+  System: AlphaGeometry
+  Year: 2024
+  Game/Domain: Geometry proofs
+  Human data?: Synthetic data
+  Key innovation: Neuro-symbolic hybrid
+  ────────────────────────────────────────
+  System: AlphaProof
+  Year: 2024
+  Game/Domain: Math proofs
+  Human data?: Synthetic data
+  Key innovation: MCTS + Lean 4 verification
+  ────────────────────────────────────────
+  System: AlphaEvolve
+  Year: 2025
+  Game/Domain: General discovery
+  Human data?: LLM pretrained knowledge
+  Key innovation: LLM-guided evolution
+
+  The throughline from AlphaGo to today: search over possibilities, guided by
+  learned evaluation, verified against ground truth. The domain changes, the
+representations change, but the core principle remains.
