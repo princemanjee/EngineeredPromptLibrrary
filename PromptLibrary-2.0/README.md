@@ -73,17 +73,9 @@ File names mirror the source library 1:1. Do not rename files during upgrade.
 
 ---
 
-## Completion Progress
-
-**0 / 225 prompts completed**
-
-Source prompts are in `PromptLibrary-XML/`. Upgrade one prompt at a time following `PRPs/phase3-task2-prompt-upgrade-process.md`.
-
----
-
 ## Reference Documents
 
-Every v2.0 prompt must be built using these guidelines:
+Every v2.0 prompt was built using these guidelines:
 
 | Document | Purpose |
 |----------|---------|
