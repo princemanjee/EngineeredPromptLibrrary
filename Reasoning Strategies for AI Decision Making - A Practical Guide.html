@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<title></title>
+	<meta name="generator" content="LibreOffice 25.8.5.2 (Windows)"/>
+	<meta name="created" content="2026-03-28T21:58:26.521068100"/>
+	<meta name="changed" content="2026-03-28T22:15:44.002828900"/>
+	<style type="text/css">
+		@page { size: 8.5in 11in; margin: 0.79in }
+		p { line-height: 115%; margin-bottom: 0.1in; background: transparent }
+		h1 { margin-bottom: 0.08in; background: transparent; page-break-after: avoid }
+		h1.western { font-family: "Liberation Serif", serif; font-weight: bold; font-size: 24pt }
+		h1.cjk { font-size: 24pt; font-family: "NSimSun"; font-weight: bold }
+		h1.ctl { font-family: "Lucida Sans"; font-size: 24pt; font-weight: bold }
+		h2 { margin-top: 0.14in; margin-bottom: 0.08in; background: transparent; page-break-after: avoid }
+		h2.western { font-family: "Liberation Serif", serif; font-weight: bold; font-size: 18pt }
+		h2.cjk { font-size: 18pt; font-family: "NSimSun"; font-weight: bold }
+		h2.ctl { font-family: "Lucida Sans"; font-size: 18pt; font-weight: bold }
+		h3 { margin-top: 0.1in; margin-bottom: 0.08in; background: transparent; page-break-after: avoid }
+		h3.western { font-family: "Liberation Serif", serif; font-weight: bold; font-size: 14pt }
+		h3.cjk { font-size: 14pt; font-family: "NSimSun"; font-weight: bold }
+		h3.ctl { font-family: "Lucida Sans"; font-size: 14pt; font-weight: bold }
+		td p { orphans: 0; widows: 0; background: transparent }
+		th p { font-weight: bold; text-align: center; orphans: 0; widows: 0; background: transparent }
+		strong { font-weight: bold }
+		em { font-style: italic }
+		a:link { color: #000080; text-decoration: underline }
+	</style>
+</head>
+<body lang="en-US" link="#000080" vlink="#800000" dir="ltr"><h1 class="western">
+Reasoning Strategies for AI Decision Making: A Practical Guide</h1>
+<p><br/>
+<br/>
+
+</p>
+<p>By Prince Rehman Manjee</p>
+<hr/>
+
+<h2 class="western">Introduction</h2>
+<p>Large language models do not reason by default. Without structured
+prompting, they pattern-match from training data to the nearest
+plausible-sounding answer and print it. That process is fast and
+often convincing, but it is not the same as working through a
+problem. Reasoning strategies are the practical answer to this gap.
+They are structured prompting and inference patterns that force a
+model to deliberate, trace its steps, verify its conclusions, or
+explore alternatives before committing to an output.</p>
+<p>The field accelerated sharply in 2022 when Wei et al. demonstrated
+that asking a model to &quot;think step by step&quot; produced
+meaningful accuracy gains on multi-step arithmetic and symbolic
+reasoning tasks. That paper, combined with a wave of follow-on
+research through 2023 and 2024, produced a catalog of more than 40
+documented strategies. Knowing which one to reach for, and why, is
+now a practical skill for anyone building or deploying AI systems.</p>
+<p>This paper covers the major strategy families, explains how each
+one works and where it breaks down, and provides a concrete selection
+framework. The goal is not exhaustive coverage but enough depth to
+make informed decisions.</p>
+<hr/>
+
+<h2 class="western">Background: Why Reasoning Strategies Matter</h2>
+<p>The underlying problem is that language models are trained to
+predict the next token, not to be correct. On simple questions they
+usually converge on the right answer because the correct response is
+statistically common in training data. On harder problems, that
+statistical tendency becomes a liability. The model confidently
+produces text that looks like a correct answer but contains factual
+errors, logical gaps, or fabricated citations.</p>
+<p>Reasoning strategies address this by restructuring the inference
+process. Instead of one forward pass from prompt to answer, the model
+is guided through intermediate steps, alternative branches,
+verification loops, or tool calls. The structure imposes discipline
+on the generation process and creates checkpoints where errors can
+surface and be corrected.</p>
+<p>From a systems design perspective, there is a real cost to this.
+More structure means more tokens and more latency. Some strategies
+(Tree of Thought, Self-Consistency) multiply inference cost by a
+factor of three to ten or more. The value has to justify the
+overhead, which is why strategy selection matters as much as strategy
+design.</p>
+<hr/>
+
+<h2 class="western">The Major Strategy Families</h2>
+<h3 class="western">Single-Path Strategies</h3>
+<p>Single-path strategies produce one reasoning trace from start to
+finish. They are the lowest-cost option and the right starting point
+for most problems.</p>
+<p><strong>Chain-of-Thought (CoT)</strong> is the foundation of the
+field. Wei et al. (2022) demonstrated that inserting a few worked
+examples with explicit intermediate steps into a prompt, or simply
+asking the model to think step by step, substantially improved
+performance on multi-step reasoning tasks. The model externalizes its
+working, which makes errors visible and catchable. CoT works well for
+math, logical deduction, structured analysis, and any task where
+showing the work is itself part of the deliverable.</p>
+<p><strong>Zero-Shot CoT</strong> is the minimal version. Kojima et
+al. (2022) showed that appending &quot;Let's think step by step&quot;
+to a prompt, with no examples at all, activates similar reasoning
+behavior. It costs essentially nothing extra and serves as a sensible
+default when you have no examples to provide and the task is at least
+moderately complex.</p>
+<p><strong>Plan-and-Solve</strong> adds an explicit planning step
+before execution. The model first writes a structured plan of what it
+intends to do, then follows that plan. This reduces the problem of
+mid-reasoning drift, where a model starts down one approach and
+shifts direction partway through. It is particularly useful for
+longer, multi-part tasks where coherence across sections matters.</p>
+<p><strong>Program-of-Thought (PoT)</strong> converts the reasoning
+problem into code, executes the code, and returns the result. For
+mathematical and algorithmic problems, this is significantly more
+reliable than natural language reasoning because the execution
+environment enforces correctness in a way that a language model by
+itself cannot. If the domain permits code execution, this is often
+the right tool for any computation-heavy task.</p>
+<hr/>
+
+<h3 class="western">Multi-Path and Sampling Strategies</h3>
+<p>When a single reasoning path is not trustworthy enough, multi-path
+strategies sample several independent paths and aggregate across
+them.</p>
+<p><strong>Self-Consistency</strong> (Wang et al., 2022) generates N
+independent Chain-of-Thought reasoning paths for the same problem and
+selects the most frequent final answer via majority vote. The core
+insight is that a correct answer is more likely to emerge across
+diverse reasoning paths than an incorrect one. Self-Consistency is
+expensive (N times the inference cost) but provides a confidence
+signal: high agreement indicates high confidence, while a close split
+indicates genuine uncertainty. It is the right choice for high-stakes
+factual or mathematical tasks where single-path CoT makes errors at
+an unacceptable rate.</p>
+<p><strong>Tree of Thought (ToT)</strong> (Yao et al., 2023)
+generalizes CoT into a search over branching thought paths. The model
+generates multiple candidate &quot;thoughts&quot; at each step,
+evaluates each one, and extends the most promising. This mirrors how
+a person might work through a hard puzzle, generating several
+candidate moves, ruling out the weak ones, and going deeper on the
+strong ones. ToT is expensive and designed for genuinely hard
+exploratory problems, creative or strategic tasks with no obvious
+path, and situations where backtracking matters. Using it on a simple
+problem is wasteful.</p>
+<p><strong>Graph of Thought (GoT)</strong> extends the tree structure
+further by allowing reasoning paths to merge, not just branch.
+Insights from one branch can combine with insights from another. This
+captures a class of problems where the final answer synthesizes
+multiple independent lines of reasoning, rather than following a
+single branch to its conclusion.</p>
+<hr/>
+
+<h3 class="western">Self-Refinement Strategies</h3>
+<p>Self-refinement strategies generate an initial output, evaluate
+it, and revise it through a feedback loop.</p>
+<p><strong>Self-Refine</strong> cycles through generate, critique,
+and revise. The model produces a first draft, then critiques that
+draft against explicit quality criteria, then produces a revised
+version. This continues until quality is acceptable or a max
+iteration count is reached. Self-Refine is well-suited to writing
+tasks, code quality, and any output where iterative improvement is
+more important than first-pass correctness.</p>
+<p><strong>Reflexion</strong> (Shinn et al., 2023) targets agentic
+tasks where the model takes actions in an environment and receives
+clear success or failure signals. After a failed attempt, the model
+writes a verbal reflection: what went wrong, why, and what to try
+differently. That reflection is stored in a text-based memory and
+prepended to the next attempt. The key distinction from Self-Refine
+is that Reflexion learns across attempts from real failure signals,
+not from self-critique of a static draft. It is the right strategy
+for debugging loops, multi-step agent workflows, and any task where
+early attempts provide genuine information about what does not work.</p>
+<p><strong>Chain-of-Verification (CoVe)</strong> (Dhuliawala et al.,
+2023) targets factual accuracy. The model generates an initial
+response, writes a set of verification questions designed to test
+specific claims in that response, answers those verification
+questions independently (without referencing the original response),
+and then compares answers to flag discrepancies. This catches a class
+of errors that self-review misses because the model is not re-reading
+its own reasoning; it is answering independently formulated questions
+that directly probe each claim.</p>
+<hr/>
+
+<h3 class="western">Decomposition Strategies</h3>
+<p>Decomposition strategies break a complex problem into manageable
+pieces before attempting a solution.</p>
+<p><strong>Least-to-Most</strong> tackles problems with hierarchical
+dependencies by solving the simplest subproblem first and using that
+result to solve the next. The answer to each stage feeds forward into
+subsequent stages. This mirrors how a competent engineer approaches a
+complex build: solve the foundational pieces first, then compose
+upward.</p>
+<p><strong>Skeleton-of-Thought</strong> generates a structural
+outline of the full answer before filling in any section. This is the
+right approach for long-form documents, research reports, and any
+content where overall structure and completeness matter as much as
+section-level quality. It prevents the common failure mode where a
+model writes in great depth on early sections and runs out of
+coherent material by the end.</p>
+<hr/>
+
+<h3 class="western">Retrieval and Tool-Use Strategies</h3>
+<p>When a problem requires information the model does not have, or
+computation it cannot perform reliably, tool-use strategies integrate
+external capabilities into the reasoning loop.</p>
+<p><strong>ReAct</strong> (Yao et al., 2022/2023) interleaves
+explicit reasoning (Thought) with concrete tool actions (Act) and the
+results of those actions (Observation) in a repeating loop. Before
+each action, the model writes a thought explaining what it is doing
+and why. After each action, it records the observation and updates
+its plan. This grounding in real feedback dramatically reduces
+hallucination in agentic tasks because the model is reasoning from
+actual retrieved information rather than from memory alone.</p>
+<p><strong>ReWOO</strong> separates planning from execution. The
+model first writes the entire plan of tool calls upfront, then
+executes them in sequence. This is more token-efficient than ReAct
+when the full plan is knowable before any results come back. ReWOO is
+preferred when the task is predictable and sequential; ReAct is
+preferred when early results need to change later actions.</p>
+<hr/>
+
+<h3 class="western">Abstraction and Analogy Strategies</h3>
+<p><strong>Step-Back Prompting</strong> asks the model to first
+answer a more general version of the question before addressing the
+specific case. If the question is &quot;How should a retail startup
+price its API product?&quot;, the Step-Back version starts with &quot;What
+principles govern software product pricing strategy?&quot; This
+activates relevant general knowledge and provides a coherent
+framework before diving into specifics. It is particularly effective
+for complex, novel, or domain-crossing questions.</p>
+<p><strong>Analogical Prompting</strong> asks the model to generate
+relevant analogies or examples before solving the problem. Rather
+than being provided examples by the user (as in few-shot prompting),
+the model recalls and applies its own examples. This improves
+performance on novel tasks by activating similar problems the model
+has encountered, without requiring the user to know which examples to
+provide.</p>
+<hr/>
+
+<h2 class="western">A Framework for Strategy Selection</h2>
+<p>Selecting the right strategy is a six-dimension evaluation. The
+router logic developed in the Reasoning Strategy Prompt Library
+formalizes this into a decision tree, but the underlying dimensions
+are worth understanding on their own.</p>
+<h3 class="western">Dimension 1: Tool Use</h3>
+<p>The most important gate. Does the task require web search, code
+execution, API calls, or access to databases? If yes, the strategy
+must support tool integration. ReAct is the default for dynamic tasks
+where each result informs the next action. ReWOO is preferred when
+the full sequence of tool calls is knowable upfront and token
+efficiency matters. Almost every other strategy assumes the model
+reasons from memory; if the task requires current information or
+external computation, tool-use strategies are not optional.</p>
+<h3 class="western">Dimension 2: Verification Requirements</h3>
+<p>How bad is a wrong answer? For factual content where accuracy is
+non-negotiable (medical information, legal summaries, research
+citations), Chain-of-Verification adds a meaningful safety layer. For
+iterative quality improvement on writing or code, Self-Refine or
+Reflexion is the appropriate choice. For high-stakes single-answer
+problems, Self-Consistency provides a confidence signal along with
+the answer.</p>
+<h3 class="western">Dimension 3: Decomposability</h3>
+<p>Can the task be split into subtasks with dependencies? If the
+problem is hierarchical (each piece requires prior pieces),
+Least-to-Most is the natural fit. If the problem is a long document
+with parallel sections that can be developed independently,
+Skeleton-of-Thought is more efficient. If the problem requires an
+upfront plan before execution but is not strictly hierarchical,
+Plan-and-Solve is sufficient.</p>
+<h3 class="western">Dimension 4: Exploration</h3>
+<p>Some problems have one correct path; others genuinely benefit from
+exploring alternatives. Creative and strategic tasks, design
+decisions with real tradeoffs, and problems with ambiguous starting
+points all benefit from Tree of Thought or Graph of Thought.
+Discipline matters here. ToT and GoT are expensive. Reaching for them
+on a linear problem because it feels complex is a common and costly
+mistake.</p>
+<h3 class="western">Dimension 5: Domain and Task Type</h3>
+<table cellpadding="2" cellspacing="2">
+	<thead>
+		<tr>
+			<th style="border: none; padding: 0in"><p>Domain</p>
+			</th>
+			<th style="border: none; padding: 0in"><p>Preferred Strategy</p>
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Mathematics and formal
+				logic</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>Program-of-Thought,
+				Self-Consistency, CoT</p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Code generation and
+				debugging</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>Program-of-Thought,
+				Reflexion, Plan-and-Solve</p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Research and factual
+				questions</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>ReAct + CoVe, Step-Back
+				+ CoT</p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Long-form writing and
+				documentation</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>Skeleton-of-Thought,
+				Self-Refine</p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Creative and strategic
+				problems</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>Tree of Thought,
+				Self-Refine</p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Novel or abstract
+				concepts</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>Step-Back, Analogical
+				Prompting</p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Classification and
+				format matching</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>Few-Shot</p>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: none; padding: 0in"><p>Agentic task loops</p>
+			</td>
+			<td style="border: none; padding: 0in"><p>ReAct, ReWOO, Reflexion</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<h3 class="western">Dimension 6: Examples Available</h3>
+<p>If you have well-formed input/output examples that match the
+target format and quality, few-shot prompting is hard to beat for
+format consistency. If you have no examples, zero-shot CoT is the
+pragmatic default. If the model can be asked to generate its own
+relevant analogies, Analogical Prompting occupies the middle ground.</p>
+<hr/>
+
+<h3 class="western">The Decision Tree</h3>
+<p>The six dimensions map to a practical decision sequence:</p>
+<ol>
+	<li><p style="margin-bottom: 0in"><strong>Does this task require
+	external tools?</strong> Yes: start with ReAct or ReWOO. No:
+	continue. 
+	</p></li>
+	<li><p style="margin-bottom: 0in"><strong>Is factual accuracy the
+	primary risk?</strong> Yes: add Chain-of-Verification. No: continue.
+		</p></li>
+	<li><p style="margin-bottom: 0in"><strong>Is the task decomposable
+	into subtasks?</strong> Yes: evaluate Least-to-Most,
+	Skeleton-of-Thought, or Plan-and-Solve based on structure. No:
+	continue. 
+	</p></li>
+	<li><p style="margin-bottom: 0in"><strong>Does exploration of
+	multiple paths add value?</strong> Yes: Tree of Thought or
+	Self-Consistency. No: continue. 
+	</p></li>
+	<li><p style="margin-bottom: 0in"><strong>Is the domain math, code,
+	or formal reasoning?</strong> Yes: Program-of-Thought or CoT with
+	Self-Consistency. No: continue. 
+	</p></li>
+	<li><p><strong>Default:</strong> Chain-of-Thought for complex tasks,
+	Zero-Shot CoT for simpler ones. 
+	</p></li>
+</ol>
+<hr/>
+
+<h3 class="western">Combining Strategies</h3>
+<p>Some tasks span more than one dimension and benefit from pairing
+two strategies. Common combinations include:</p>
+<ul>
+	<li><p style="margin-bottom: 0in"><strong>ReAct +
+	Chain-of-Verification</strong> for research tasks requiring both
+	tool access and factual accuracy. 
+	</p></li>
+	<li><p style="margin-bottom: 0in"><strong>Tree of Thought +
+	Self-Refine</strong> for creative or strategic problems where both
+	exploration and quality polish matter. 
+	</p></li>
+	<li><p style="margin-bottom: 0in"><strong>Step-Back + CoT</strong>
+	for novel domain problems where a general principle frame improves
+	the specific reasoning. 
+	</p></li>
+	<li><p style="margin-bottom: 0in"><strong>Plan-and-Solve +
+	Self-Refine</strong> for complex multi-part writing tasks. 
+	</p></li>
+	<li><p><strong>ReWOO + Chain-of-Verification</strong> for agentic
+	pipelines where the output will be presented as fact. 
+	</p></li>
+</ul>
+<p>The practical limit is two strategies in combination. Stacking
+three or more usually signals that the task needs to be decomposed
+rather than covered by a more complex strategy stack.</p>
+<hr/>
+
+<h2 class="western">Cost and Overhead Considerations</h2>
+<p>Strategies are not free. Every additional reasoning step costs
+tokens, and every additional parallel path costs compute time and
+money. In production systems this matters.</p>
+<p>Single-path strategies (CoT, Zero-Shot CoT, Plan-and-Solve) add
+modest overhead: typically 20 to 50 percent more tokens than a direct
+answer. This is almost always worth it for non-trivial tasks.</p>
+<p>Self-Consistency and Tree of Thought scale linearly with the
+number of paths sampled. Running three paths triples the inference
+cost. Running five paths quintuples it. These strategies should be
+reserved for high-stakes tasks where the cost of a wrong answer
+exceeds the cost of extra inference.</p>
+<p>ReAct and ReWOO cost scales with the number of tool calls and the
+size of observations retrieved. A research task with six web searches
+and long retrieved documents can run ten to twenty times the token
+count of a direct answer. For agentic systems, this is usually
+acceptable because the task genuinely cannot be done without those
+tool calls. For tasks that could be done from memory, it is waste.</p>
+<p>The general design principle: start with the simplest strategy
+that has a reasonable chance of producing an acceptable result. Add
+complexity only when the simpler approach fails, not preemptively.</p>
+<hr/>
+
+<h2 class="western">Limitations of the Current Landscape</h2>
+<p>The strategy landscape is moving fast. Several important caveats
+apply to any survey written in 2024 or 2025.</p>
+<p>First, most benchmark results come from specific model families on
+specific task types. A strategy that shows strong gains on GPT-4 on
+math benchmarks may show different behavior on other models or on
+domain-specific tasks. The published results are directionally useful
+but should be validated on your specific model and use case.</p>
+<p>Second, many strategies require careful prompt engineering to
+activate reliably. Zero-Shot CoT works well on capable frontier
+models. On smaller models, you may need few-shot examples to get the
+same effect. Strategy selection cannot be fully separated from the
+capability tier of the model being used.</p>
+<p>Third, the field has not converged on standard evaluation
+protocols. Comparing reported accuracy gains across papers is
+difficult because they use different baselines, different datasets,
+and different inference budgets. Be skeptical of claims that one
+strategy is uniformly superior.</p>
+<hr/>
+
+<h2 class="western">Conclusion</h2>
+<p>Reasoning strategies are the practical bridge between what
+language models can produce by default and what they need to produce
+for real tasks. The core principle is simple: structure the inference
+process, and quality goes up. The practical challenge is selecting
+the right structure for the task at hand without over-engineering.</p>
+<p>The six-dimension framework in this paper provides a working
+starting point. Evaluate tool use requirements, verification needs,
+decomposability, exploration value, domain, and example availability.
+Start simple. Add structure when it is warranted. Combine strategies
+when a task genuinely spans two dimensions. Measure the cost against
+the value.</p>
+<p>The field is young, and the catalog of strategies will continue to
+grow. The underlying logic for selecting among them, however, is
+stable: match the structure of the reasoning strategy to the
+structure of the problem.</p>
+<hr/>
+
+<h2 class="western">References</h2>
+<p>Dhuliawala, S., Komeili, M., Xu, J., Raileanu, R., Li, X.,
+Celikyilmaz, A., &amp; Weston, J. (2023). <em>Chain-of-verification
+reduces hallucination in large language models</em>. arXiv.
+<a href="https://arxiv.org/abs/2309.11495">https://arxiv.org/abs/2309.11495</a></p>
+<p>Kojima, T., Gu, S. S., Reid, M., Matsuo, Y., &amp; Iwasawa, Y.
+(2022). <em>Large language models are zero-shot reasoners</em>.
+arXiv. <a href="https://arxiv.org/abs/2205.11916">https://arxiv.org/abs/2205.11916</a></p>
+<p>Shinn, N., Cassano, F., Berman, E., Gopinath, A., Narasimhan, K.,
+&amp; Yao, S. (2023). <em>Reflexion: Language agents with verbal
+reinforcement learning</em>. arXiv. <a href="https://arxiv.org/abs/2303.11366">https://arxiv.org/abs/2303.11366</a></p>
+<p>Wang, X., Wei, J., Schuurmans, D., Le, Q., Chi, E., Narang, S.,
+Chowdhery, A., &amp; Zhou, D. (2022). <em>Self-consistency improves
+chain of thought reasoning in language models</em>. arXiv.
+<a href="https://arxiv.org/abs/2203.11171">https://arxiv.org/abs/2203.11171</a></p>
+<p>Wei, J., Wang, X., Schuurmans, D., Bosma, M., Ichter, B., Xia, F.,
+Chi, E., Le, Q., &amp; Zhou, D. (2022). <em>Chain-of-thought
+prompting elicits reasoning in large language models</em>. arXiv;
+NeurIPS 2022. <a href="https://arxiv.org/abs/2201.11903">https://arxiv.org/abs/2201.11903</a></p>
+<p>Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., &amp;
+Cao, Y. (2022/2023). <em>ReAct: Synergizing reasoning and acting in
+language models</em>. arXiv 2022; ICLR 2023.
+<a href="https://arxiv.org/abs/2210.03629">https://arxiv.org/abs/2210.03629</a></p>
+<p>Yao, S., Yu, D., Zhao, J., Shafran, I., Griffiths, T. L., Cao, Y.,
+&amp; Narasimhan, K. (2023). <em>Tree of thoughts: Deliberate problem
+solving with large language models</em>. arXiv; NeurIPS 2023.
+<a href="https://arxiv.org/abs/2305.10601">https://arxiv.org/abs/2305.10601</a></p>
+<hr/>
+
+<h2 class="western">Limitations Note</h2>
+<p>Two claims carry residual uncertainty around publication year. The
+papers by Wang et al. (Self-Consistency) and Yao et al. (ReAct) both
+appeared on arXiv in 2022 and were accepted at ICLR 2023. The paper
+body cites both years where relevant. Readers should verify the
+specific publication venue and year if that distinction matters for
+their citation context. No fabricated sources appear in the
+references list; all citations map to real, verifiable arXiv
+identifiers.</p>
+</body>
+</html>

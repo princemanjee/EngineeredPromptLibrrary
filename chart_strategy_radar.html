@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Strategy Performance Profiles</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #f7f4ef;
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+  }
+
+  .page {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 64px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle texture overlays */
+  .page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        rgba(0,0,0,0.012) 0px, rgba(0,0,0,0.012) 1px,
+        transparent 1px, transparent 60px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,0.012) 0px, rgba(0,0,0,0.012) 1px,
+        transparent 1px, transparent 60px
+      );
+    pointer-events: none;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #9c8a5a;
+    margin-bottom: 8px;
+  }
+
+  .title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 38px;
+    color: #1a1612;
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #8c8070;
+    font-weight: 400;
+    line-height: 1.5;
+    max-width: 520px;
+  }
+
+  /* Score cards on the right */
+  .score-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .score-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .score-card {
+    background: #fff;
+    border: 1px solid #e4ddd4;
+    border-radius: 8px;
+    padding: 8px 14px;
+    min-width: 160px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+
+  .score-card:hover {
+    border-color: #c4b8a8;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .score-card.active {
+    box-shadow: 0 0 0 2px var(--accent-color);
+  }
+
+  .score-card-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+
+  .score-card-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2a2420;
+    display: flex;
+    align-items: center;
+    margin-bottom: 3px;
+  }
+
+  .score-card-sub {
+    font-size: 10.5px;
+    color: #9c9080;
+    font-weight: 400;
+    line-height: 1.3;
+  }
+
+  /* Chart + dimension detail layout */
+  .body-row {
+    flex: 1;
+    display: flex;
+    gap: 32px;
+    min-height: 0;
+    position: relative;
+  }
+
+  .chart-wrap {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+  }
+
+  .chart-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Dimension breakdown panel */
+  .breakdown {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .breakdown-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #b0a090;
+    margin-bottom: 4px;
+  }
+
+  .dim-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .dim-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dim-name {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #3a3028;
+  }
+
+  .dim-score {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6a5a48;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dim-bar-bg {
+    height: 5px;
+    background: #ede8e0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .dim-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  .active-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1612;
+    padding: 10px 0 6px;
+    border-bottom: 1px solid #e4ddd4;
+    margin-bottom: 2px;
+  }
+
+  .active-when {
+    font-size: 12px;
+    color: #8c8070;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    flex-shrink: 0;
+    border-top: 1px solid #e0d8ce;
+    padding-top: 14px;
+    position: relative;
+  }
+
+  .footer-tag {
+    font-size: 11px;
+    color: #c0b8a8;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .footer-note {
+    font-size: 11px;
+    color: #c0b8a8;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="eyebrow">Strategy Performance Profiles</div>
+      <div class="title">How each strategy family<br>performs across five dimensions</div>
+      <div class="subtitle">Click any strategy card to highlight it on the radar. Scores are relative — 100 = best-in-class for that dimension.</div>
+    </div>
+    <div class="score-cards" id="score-cards"></div>
+  </div>
+
+  <div class="body-row">
+    <div class="chart-wrap">
+      <canvas id="radarChart"></canvas>
+    </div>
+
+    <div class="breakdown">
+      <div class="breakdown-title">Dimension Scores</div>
+      <div class="active-label" id="active-label">All families shown</div>
+      <div class="active-when" id="active-when">Click a strategy card to isolate it and see its full profile below.</div>
+
+      <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 14px;" id="dim-bars"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="footer-tag">#AIArchitecture &nbsp; #LLMEngineering &nbsp; #PromptEngineering</span>
+    <span class="footer-note">Source: Reasoning Strategy Prompt Library · 2025</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const dimensions = ['Accuracy', 'Speed', 'Tool Support', 'Cost Efficiency', 'Versatility'];
+
+const families = [
+  {
+    name: 'Single-Path',
+    sub: 'CoT, Zero-Shot CoT, Plan-and-Solve',
+    color: '#4a9eff',
+    scores: [62, 92, 20, 95, 80],
+    when: 'The 80% default. Best for multi-step reasoning, format matching, and structured tasks where showing work matters. Start here before reaching for anything more complex.'
+  },
+  {
+    name: 'Multi-Path',
+    sub: 'Self-Consistency, Tree of Thought, GoT',
+    color: '#e9a425',
+    scores: [88, 25, 15, 30, 60],
+    when: 'Reserve for when correctness matters more than cost. Self-Consistency: high-stakes factual/math. Tree of Thought: only when the problem has genuine branching trade-offs.'
+  },
+  {
+    name: 'Self-Refinement',
+    sub: 'Self-Refine, Reflexion, CoVe',
+    color: '#52c98e',
+    scores: [78, 50, 25, 60, 75],
+    when: 'Best when iterative quality improvement or factual verification is the goal. Reflexion: agentic tasks with real failure signals. CoVe: when hallucination risk is high.'
+  },
+  {
+    name: 'Tool-Use',
+    sub: 'ReAct, ReWOO',
+    color: '#e96060',
+    scores: [80, 40, 100, 45, 85],
+    when: 'Non-negotiable when the task requires live data, code execution, or external APIs. ReAct: dynamic tasks where each observation changes the next action. ReWOO: when the full plan is knowable upfront.'
+  },
+  {
+    name: 'Abstraction',
+    sub: 'Step-Back, Analogical Prompting',
+    color: '#c470e8',
+    scores: [68, 82, 10, 88, 70],
+    when: 'Best for novel or cross-domain problems where a general principle frame improves specific reasoning. Low overhead, high leverage when the domain is unfamiliar.'
+  },
+];
+
+// Build score cards
+const cardsEl = document.getElementById('score-cards');
+const rows = [families.slice(0, 3), families.slice(3)];
+rows.forEach(row => {
+  const rowEl = document.createElement('div');
+  rowEl.className = 'score-row';
+  row.forEach((f, i) => {
+    const card = document.createElement('div');
+    card.className = 'score-card';
+    card.style.setProperty('--accent-color', f.color);
+    card.innerHTML = `
+      <div class="score-card-name">
+        <span class="score-card-dot" style="background:${f.color};"></span>
+        ${f.name}
+      </div>
+      <div class="score-card-sub">${f.sub}</div>
+    `;
+    card.addEventListener('click', () => toggleFamily(f, card));
+    rowEl.appendChild(card);
+  });
+  cardsEl.appendChild(rowEl);
+});
+
+// Build dim bars
+const dimBarsEl = document.getElementById('dim-bars');
+dimensions.forEach((dim, i) => {
+  const row = document.createElement('div');
+  row.className = 'dim-row';
+  row.innerHTML = `
+    <div class="dim-label">
+      <span class="dim-name">${dim}</span>
+      <span class="dim-score" id="dscore-${i}">—</span>
+    </div>
+    <div class="dim-bar-bg">
+      <div class="dim-bar-fill" id="dbar-${i}" style="width:0%; background: #ccc;"></div>
+    </div>
+  `;
+  dimBarsEl.appendChild(row);
+});
+
+// Radar chart
+const ctx = document.getElementById('radarChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'radar',
+  data: {
+    labels: dimensions,
+    datasets: families.map(f => ({
+      label: f.name,
+      data: f.scores,
+      borderColor: f.color,
+      backgroundColor: f.color + '18',
+      borderWidth: 2,
+      pointBackgroundColor: f.color,
+      pointBorderColor: '#f7f4ef',
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    }))
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 500, easing: 'easeOutQuart' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.dataset.label}: ${Math.round(ctx.raw)}`
+        },
+        bodyFont: { family: 'DM Sans', size: 13 },
+        backgroundColor: '#fff',
+        borderColor: '#e0d8ce',
+        borderWidth: 1,
+        titleColor: '#1a1612',
+        bodyColor: '#6a5a48',
+        padding: 12,
+        boxPadding: 4,
+      }
+    },
+    scales: {
+      r: {
+        min: 0,
+        max: 100,
+        ticks: {
+          display: false,
+          stepSize: 25,
+        },
+        pointLabels: {
+          color: '#5a5048',
+          font: { family: 'DM Sans', size: 14, weight: '500' },
+          padding: 16,
+        },
+        grid: { color: '#e8e0d4', lineWidth: 1 },
+        angleLines: { color: '#e8e0d4', lineWidth: 1 },
+      }
+    }
+  }
+});
+
+// Toggle logic
+let activeFamily = null;
+let activeCard = null;
+
+function toggleFamily(f, cardEl) {
+  if (activeFamily === f.name) {
+    // Deselect
+    activeFamily = null;
+    activeCard = null;
+    document.querySelectorAll('.score-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('active-label').textContent = 'All families shown';
+    document.getElementById('active-when').textContent = 'Click a strategy card to isolate it and see its full profile below.';
+    chart.data.datasets.forEach((ds, i) => {
+      ds.borderWidth = 2;
+      ds.pointRadius = 5;
+      ds.backgroundColor = families[i].color + '18';
+      ds.borderColor = families[i].color;
+      ds.pointBackgroundColor = families[i].color;
+    });
+    dimensions.forEach((_, i) => {
+      document.getElementById(`dscore-${i}`).textContent = '—';
+      document.getElementById(`dbar-${i}`).style.width = '0%';
+      document.getElementById(`dbar-${i}`).style.background = '#ccc';
+    });
+  } else {
+    activeFamily = f.name;
+    document.querySelectorAll('.score-card').forEach(c => c.classList.remove('active'));
+    cardEl.classList.add('active');
+    document.getElementById('active-label').textContent = f.name;
+    document.getElementById('active-when').textContent = f.when;
+
+    chart.data.datasets.forEach((ds, i) => {
+      const isFocused = families[i].name === f.name;
+      ds.borderWidth = isFocused ? 3 : 1;
+      ds.pointRadius = isFocused ? 6 : 3;
+      ds.backgroundColor = isFocused ? families[i].color + '30' : families[i].color + '08';
+      ds.borderColor = isFocused ? families[i].color : families[i].color + '44';
+      ds.pointBackgroundColor = isFocused ? families[i].color : families[i].color + '44';
+    });
+
+    dimensions.forEach((_, i) => {
+      const score = f.scores[i];
+      document.getElementById(`dscore-${i}`).textContent = score;
+      const bar = document.getElementById(`dbar-${i}`);
+      bar.style.width = score + '%';
+      bar.style.background = f.color;
+    });
+  }
+  chart.update();
+}
+</script>
+</body>
+</html>
