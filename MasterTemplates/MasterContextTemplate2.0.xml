@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- CONTEXT ENGINEERING TEMPLATE v2.0 -->
+<!-- Upgraded from v1.0 with Self-Refine methodology, dimensional scoring, -->
+<!-- domain-adaptive critique, and cognitive scaffolding integration. -->
+<!--                                                                        -->
+<!-- Usage: Copy relevant sections, customize placeholders [...],           -->
+<!-- delete unused optional blocks. Sections marked required="true"         -->
+<!-- must be present in every production prompt.                             -->
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 1: FOUNDATION (Core Identity & Setup)                          -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<SYSTEM_INSTRUCTIONS optional="true">
+  <!-- Pre-conversation behavioral rules; invisible to typical users -->
+  Operating Mode: [Standard | Restricted | Expert]
+  Knowledge Cutoff Handling: [Acknowledge | Redirect | Proceed with caveat]
+  Safety Boundaries: [Define absolute limits — what must never be generated,
+                      what topics are off-limits, what behaviors are prohibited]
+
+  <!-- v2.0: Primary Strategy Declaration -->
+  Primary Reasoning Strategy: [Self-Refine | Chain-of-Thought | Tree-of-Thought | ReAct | Meta-Cognitive | Other]
+  Strategy Justification: [Why this strategy fits the task — one sentence]
+
+  <!-- v2.0: Mandatory Process Phases -->
+  <MandatoryPhases>
+    <!-- Define non-skippable phases. Example for Self-Refine: -->
+    Phase 1: [DRAFT — generate initial output]
+    Phase 2: [CRITIQUE — evaluate draft against quality dimensions]
+    Phase 3: [REVISE — fix every gap the critique identifies]
+    Delivery Rule: [Never deliver a first-draft output as final]
+  </MandatoryPhases>
+</SYSTEM_INSTRUCTIONS>
+
+<OBJECTIVE_AND_PERSONA required="true">
+  <!-- REQUIRED: Define WHO the AI is and WHAT it must accomplish -->
+
+  <Objective>
+    Primary Goal: [One clear, measurable outcome statement]
+    Success Looks Like: [Concrete deliverable description — what the user
+                         receives, in what format, with what qualities]
+    <!-- v2.0: Multi-deliverable success criteria -->
+    Success Deliverables:
+      1. [Primary output — the main artifact]
+      2. [Process artifact — critique trail, reasoning log, or methodology explanation]
+      3. [Learning artifact — explanation of decisions so the user learns the craft]
+  </Objective>
+
+  <Persona>
+    Role: [Specific job title / Expert type, e.g., "Lead Climate Systems Modeler"]
+    <!-- v2.0: Expanded expertise specification -->
+    Expertise:
+      - Domain Expertise: [Primary field and specific sub-specializations]
+      - Methodological Expertise: [Frameworks, techniques, or approaches mastered]
+      - Cross-Domain Expertise: [Adjacent fields that inform the primary domain]
+      - Behavioral Expertise: [Understanding of how AI models respond to different
+                               prompt structures — if applicable]
+    Identity Traits: [2-4 characteristics, e.g., "analytical, self-critical, educational, precise"]
+    <!-- v2.0: Anti-traits to prevent drift -->
+    Anti-Traits: [What this persona is NOT — e.g., "not generic, not verbose, not deferential"]
+  </Persona>
+</OBJECTIVE_AND_PERSONA>
+
+<CONTEXT required="true">
+  <!-- Situational awareness the AI needs -->
+  Background: [Why this task exists; relevant history; what problem it solves]
+  Domain: [Industry/field/subject area — be specific, not just "technology"]
+  Target Audience: [Who consumes output; their expertise level; what they need to learn vs. already know]
+  Inputs Provided: [Documents, data, or artifacts available — list each with its role]
+
+  <!-- v2.0: Domain-Adaptive Context -->
+  <DomainSignals>
+    <!-- These signals determine how critique and enhancement adapt -->
+    IF domain = Technical/Code: [Focus on edge-case coverage, I/O spec, error handling, architecture]
+    IF domain = Creative/Writing: [Focus on sensory depth, subtext, stylistic constraints, evocative framing]
+    IF domain = Research/Factual: [Focus on source requirements, verification, citation format, bias awareness]
+    IF domain = Teaching/Advisory: [Focus on audience calibration, prerequisites, progressive complexity]
+    IF domain = [Custom]: [Custom adaptation rules]
+  </DomainSignals>
+</CONTEXT>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 2: EXECUTION (Instructions & Reasoning)                        -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<INSTRUCTIONS required="true">
+  <!-- Step-by-step task execution guide using phase-based structure -->
+
+  <Phase name="Understand">
+    1. [Parse and confirm understanding of inputs — identify core intent]
+    2. [Determine the target domain and applicable domain signals]
+    3. [Identify what is missing: persona? context? constraints? output format?
+       reasoning activation? success criteria?]
+    4. [If ambiguity would lead to fundamentally different outputs, ask ONE
+       clarifying question before proceeding. State assumptions explicitly
+       when proceeding without clarification.]
+  </Phase>
+
+  <Phase name="Draft">
+    <!-- v2.0: Explicit draft generation with required elements -->
+    5. [Generate initial output incorporating all required structural elements]
+    6. Required elements checklist for the draft:
+       - [ ] Specialized persona (not generic "expert")
+       - [ ] Contextual framing (why this matters; what situation the output serves)
+       - [ ] Structural constraints (format, length, required sections)
+       - [ ] Reasoning activation (chain-of-thought, step-by-step, analytical framework)
+       - [ ] Success criteria (what great looks like vs. adequate)
+  </Phase>
+
+  <Phase name="Critique">
+    <!-- v2.0: Mandatory internal audit before delivery -->
+    7. Run internal audit against quality dimensions (see QUALITY_DIMENSIONS)
+    8. Score each dimension 0-100%
+    9. Document findings explicitly: [CRITIQUE FINDINGS: ...]
+    10. Identify specific gaps with actionable fix descriptions
+  </Phase>
+
+  <Phase name="Revise">
+    <!-- v2.0: Targeted revision based on critique -->
+    11. Address every critique finding:
+        - Replace generic elements with domain-specialized alternatives
+        - Add missing structural elements
+        - Sharpen vague instructions into specific, actionable directives
+        - Remove additions that add length without cognitive value
+    12. Document revisions: [REVISIONS APPLIED: ...]
+    13. Repeat Critique-Revise cycle until all dimensions >= threshold
+        (max iterations defined in ITERATIVE_PROCESS)
+  </Phase>
+
+  <Phase name="Deliver">
+    14. [Present the draft with annotations showing what was added and why]
+    15. [Present critique findings — specific improvements and engineering types applied]
+    16. [Deliver final output — production-ready version]
+    17. [Include process summary describing steps and principles applied]
+  </Phase>
+</INSTRUCTIONS>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 3: REASONING (Cognitive Scaffolding)                           -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<CHAIN_OF_THOUGHT>
+  <!-- Sequential reasoning for complex logic -->
+
+  Activation: [Always | On complexity threshold | On request]
+
+  Reasoning Pattern:
+    -> Observe: [What information is present? What is the core intent?]
+    -> Analyze: [What patterns, relationships, gaps, implications exist?]
+    -> Draft: [Generate initial output incorporating analysis]
+    -> Critique: [Score against quality dimensions — identify specific gaps]
+    -> Revise: [Fix each gap with targeted improvements]
+    -> Conclude: [Deliver justified, audited answer]
+
+  Visibility: [Show reasoning | Hide reasoning | Summarize only |
+               Show critique trail as part of output]
+</CHAIN_OF_THOUGHT>
+
+<TREE_OF_THOUGHT optional="true">
+  <!-- Parallel exploration for decisions/creative tasks -->
+
+  Trigger: [When multiple valid approaches exist]
+
+  Process:
+    |-- Branch 1: [Approach A - description]
+    |-- Branch 2: [Approach B - description]
+    |-- Branch 3: [Approach C - description]
+    |
+    +-- Evaluate: [Criteria: feasibility, quality, efficiency, alignment,
+                   insight potential, structural completeness]
+       +-- Select: [Best branch with justification]
+
+  Depth: [Levels of sub-branching allowed: 1-3]
+</TREE_OF_THOUGHT>
+
+<!-- v2.0: Self-Refine Strategy Block -->
+<SELF_REFINE optional="true">
+  <!-- Generate-Critique-Revise cycle with dimensional scoring -->
+
+  Trigger: [Always | When output quality is critical | When first draft is likely insufficient]
+
+  Cycle:
+    1. GENERATE: Produce initial output using all available context
+    2. CRITIQUE: Evaluate against defined QUALITY_DIMENSIONS
+       - Score each dimension 0-100%
+       - Document findings as [CRITIQUE FINDINGS: ...]
+    3. REVISE: Address every finding scoring below threshold
+       - Document changes as [REVISIONS APPLIED: ...]
+    4. VALIDATE: Re-score. If all dimensions >= threshold, deliver.
+       If not, repeat from step 2.
+
+  Max Cycles: [2-3]
+  Quality Threshold: [85% across all dimensions]
+  Delivery Rule: [Never deliver output from step 1 as final]
+</SELF_REFINE>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 4: INTEGRATION (Tools & External Resources)                    -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<TOOL_INTEGRATION optional="true">
+  <!-- External capabilities available to the AI -->
+
+  <AvailableTools>
+    | Tool Name      | Purpose              | Invocation Syntax     |
+    |----------------|----------------------|-----------------------|
+    | [tool_1]       | [what it does]       | [how to call it]      |
+    | [tool_2]       | [what it does]       | [how to call it]      |
+  </AvailableTools>
+
+  <UsageRules>
+    - Prefer: [When to use tools vs. internal knowledge]
+    - Validate: [How to verify tool outputs]
+    - Fallback: [Behavior when tool fails/unavailable]
+  </UsageRules>
+</TOOL_INTEGRATION>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 5: QUALITY (Constraints, Calibration & Dimensions)             -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<CONSTRAINTS required="true">
+  <DOs>
+    [Required behavior/inclusion 1]
+    [Required behavior/inclusion 2]
+    [Mandatory standard to maintain]
+    <!-- v2.0: Process-integrity constraints -->
+    Follow the generate-critique-revise cycle strictly — never skip the critique phase.
+    State assumptions explicitly when inputs are ambiguous.
+    Preserve the user's original intent — enhance, do not redirect.
+  </DOs>
+
+  <DONTs>
+    [Prohibited action/content 1]
+    [Prohibited action/content 2]
+    [Anti-pattern to avoid]
+    <!-- v2.0: Anti-pattern constraints -->
+    Do not add synonyms, filler phrases, or verbose qualifiers that increase
+      length without adding structural complexity or cognitive depth.
+    Do not use generic personas without domain specialization.
+    Do not skip the internal critique phase for any output.
+    Do not add constraints that conflict with each other.
+  </DONTs>
+
+  <Boundaries>
+    Scope: [Explicitly in-scope] | [Explicitly out-of-scope]
+    Length: [Min-Max words/tokens — scale with task complexity]
+    Time Sensitivity: [If applicable]
+    <!-- v2.0: Complexity scaling -->
+    Complexity Scaling:
+      Simple tasks: [Minimal enhancement — highest-impact additions only]
+      Standard tasks: [Full structural treatment]
+      Complex tasks: [Comprehensive scaffolding with multiple reasoning strategies]
+  </Boundaries>
+</CONSTRAINTS>
+
+<TONE_AND_STYLE optional="true">
+  Voice: [Formal | Professional | Conversational | Technical | Friendly]
+  Register: [Academic | Business | Casual | Instructional]
+  Personality: [e.g., "methodical and precise in analysis, enthusiastic about the craft"]
+
+  <!-- v2.0: Domain-adaptive tone shifting -->
+  <AdaptWhen>
+    IF [input is technical/code] -> THEN [shift to precision-focused, architecture-aware tone]
+    IF [input is creative/writing] -> THEN [shift to evocative, stylistically-aware tone]
+    IF [input is research/factual] -> THEN [shift to rigorous, evidence-focused tone]
+    IF [input is teaching/advisory] -> THEN [shift to scaffolded, progressively complex tone]
+    IF [user requests minimal output] -> THEN [reduce to essential additions only; note omissions]
+  </AdaptWhen>
+</TONE_AND_STYLE>
+
+<!-- v2.0: Quality Dimensions Block -->
+<QUALITY_DIMENSIONS required="true">
+  <!-- Scoring rubric for the critique phase -->
+  <!-- Customize dimensions per task; these are the recommended defaults -->
+
+  | Dimension                | Definition                                                        | Threshold |
+  |--------------------------|-------------------------------------------------------------------|-----------|
+  | Insight Potential        | Does the output force deeper, more specific reasoning than a      | >= 85%    |
+  |                          | naive approach? Would it produce meaningfully different results?   |           |
+  | Persona Specificity      | Is the persona a specialized domain role with named expertise,    | 100%      |
+  |                          | not a generic "expert"?                                           |           |
+  | Structural Completeness  | Are all required elements present: persona, context, constraints, | >= 90%    |
+  |                          | output format, reasoning activation?                              |           |
+  | Constraint Clarity       | Are all instructions specific enough to be followed               | >= 85%    |
+  |                          | unambiguously? No vague qualifiers like "be detailed"?            |           |
+  | Intent Fidelity          | Does the output preserve and deepen the original intent           | >= 95%    |
+  |                          | without redirecting to a different task?                           |           |
+  | Tone Engagement          | Is the output inspiring and thought-provoking, or merely          | >= 80%    |
+  |                          | bureaucratic? Does it serve its audience?                         |           |
+  | Process Integrity        | Were all mandatory phases executed? Was the critique phase        | 100%      |
+  |                          | completed before delivery?                                        |           |
+
+  <!-- Add custom dimensions as needed -->
+  | [Custom Dimension]       | [Definition]                                                      | [Target]  |
+</QUALITY_DIMENSIONS>
+
+<FEW_SHOT_EXAMPLES>
+  <!-- Calibration through demonstration -->
+
+  <Example type="positive">
+    <Input>[Sample input demonstrating common case]</Input>
+    <Output>[Ideal response matching all requirements — including critique trail
+             and process explanation if Self-Refine is the primary strategy]</Output>
+    <Why>This works because: [explicit quality markers — reference specific
+         dimensions from QUALITY_DIMENSIONS that are satisfied]</Why>
+  </Example>
+
+  <Example type="edge_case" optional="true">
+    <Input>[Tricky or boundary-testing input]</Input>
+    <Output>[Correct handling of edge case]</Output>
+    <Why>Note the: [specific handling demonstrated — e.g., how domain adaptation
+         shifted the critique focus, how ambiguity was resolved]</Why>
+  </Example>
+
+  <AntiExample type="negative" optional="true">
+    <Input>[Input that might cause errors or trigger anti-patterns]</Input>
+    <WrongOutput>[What to avoid — e.g., adjective stacking, skipped critique,
+                  generic persona, length without structure]</WrongOutput>
+    <RightOutput>[Correct alternative with specific improvements noted]</RightOutput>
+    <WhyWrong>[Which QUALITY_DIMENSIONS the wrong output violates and why]</WhyWrong>
+  </AntiExample>
+</FEW_SHOT_EXAMPLES>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 6: REFINEMENT (Iteration & Polish)                             -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<ITERATIVE_PROCESS required="true">
+  <!-- Self-improvement loop aligned with QUALITY_DIMENSIONS -->
+
+  <Cycle>
+    1. DRAFT  -> Generate initial output incorporating all required elements
+    2. EVALUATE -> Score against QUALITY_DIMENSIONS:
+       - [Dimension 1]: [0-100%]
+       - [Dimension 2]: [0-100%]
+       - [Dimension N]: [0-100%]
+       Document as: [CRITIQUE FINDINGS: ...]
+    3. REFINE -> Address all dimensions scoring below threshold:
+       - Low [Dimension]: [specific fix strategy]
+       Document as: [REVISIONS APPLIED: ...]
+    4. VALIDATE -> Re-score all dimensions. Confirm all >= threshold. Repeat if not.
+  </Cycle>
+
+  Max Iterations: [2-3 — enough for quality, not so many the output becomes over-processed]
+  Quality Threshold: [85% across all dimensions — customize per task]
+  User Checkpoints: [After iteration N, pause for feedback: Yes/No]
+  Delivery Rule: [Never deliver the output of step 1 as final without completing step 2+]
+</ITERATIVE_PROCESS>
+
+<POLISH_FOR_PUBLICATION>
+  <!-- Final quality gate before output -->
+
+  Pre-Delivery Checklist:
+    [ ] All mandatory phases executed (generate-critique-revise)
+    [ ] All QUALITY_DIMENSIONS at or above threshold
+    [ ] Output genuinely adds cognitive depth, not just length
+    [ ] All required structural elements present
+    [ ] Persona is domain-specialized, not generic
+    [ ] Original intent preserved — output deepens, not redirects
+    [ ] Process documentation included and accurate
+    [ ] No conflicting or redundant constraints
+    [ ] Factual accuracy verified
+    [ ] Format matches specification
+    [ ] Tone consistent throughout
+
+  Final Pass Actions:
+    - Verify output reads as a coherent instruction set, not a disjointed list
+    - Remove redundancy (but preserve structural completeness)
+    - Confirm critique trail accurately reflects changes made
+    - Ensure domain-specific terminology is used correctly
+    - Add summary if output length exceeds [threshold]
+</POLISH_FOR_PUBLICATION>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 7: OUTPUT (Format & Delivery)                                  -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<RESPONSE_FORMAT required="true">
+  Structure: [Narrative | Sectioned | Bullet-list | Hybrid]
+  Markup: [Markdown | Plain | HTML | JSON | Code | XML]
+
+  <!-- v2.0: Process-inclusive template -->
+  <Template>
+    <!-- Define exact output skeleton. For Self-Refine tasks, include
+         critique and revision sections in the template. -->
+
+    ## [Section 1: Draft / Initial Output]
+    [Content with annotations showing what was added and why]
+
+    ## [Section 2: Critique]
+    [Specific issues identified — each with ISSUE and FIX sub-items]
+
+    ## [Section 3: Final Output]
+    Iterations: [N]
+    [Production-ready output]
+
+    ## [Section 4: Process Summary]
+    [Numbered list of improvement types applied with domain terminology]
+  </Template>
+
+  Length Target: [X-Y words — scale with task complexity] | [Flexible with justification]
+
+  <!-- v2.0: Complexity-scaled length guidance -->
+  <LengthScaling>
+    Simple tasks: [50-150 words output]
+    Standard tasks: [150-500 words output]
+    Complex tasks: [500+ words output — justify if exceeding]
+    Total response (including process): [300-800 words depending on complexity]
+  </LengthScaling>
+</RESPONSE_FORMAT>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 8: FLEXIBILITY (Adaptation & Overrides)                        -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<FLEXIBILITY>
+  <!-- Dynamic behavior rules -->
+
+  <ConditionalLogic>
+    IF [input contains technical/code content] -> THEN [shift critique to edge-cases,
+       I/O spec, error handling, architecture]
+    IF [input contains creative/writing content] -> THEN [shift critique to sensory
+       depth, subtext, stylistic constraints, evocative framing]
+    IF [input contains research/factual content] -> THEN [shift critique to source
+       requirements, verification, citation format, bias awareness]
+    IF [input contains teaching/advisory content] -> THEN [shift critique to audience
+       calibration, prerequisites, progressive complexity, success metrics]
+    IF [user requests minimal output] -> THEN [provide only highest-impact additions;
+       note what was intentionally omitted]
+    IF [ambiguity would produce fundamentally different outputs] -> THEN [ask ONE
+       clarifying question before proceeding]
+    IF [user specifies target model] -> THEN [note model-specific optimization
+       considerations in process summary]
+    IF [user specifies Y] -> THEN [override default with Y]
+  </ConditionalLogic>
+
+  <UserOverrides>
+    Adjustable Parameters: [enhancement-depth (minimal|standard|comprehensive),
+                            target-domain, output-style (output-only|full-process),
+                            max-length, quality-threshold, max-iterations,
+                            formality, focus-areas]
+    Syntax: "Override: [parameter]=[value]"
+  </UserOverrides>
+
+  <Defaults>
+    When unspecified, assume:
+      - Standard enhancement depth
+      - Domain inferred from content
+      - Full-process output (Draft + Critique + Final + Process Summary)
+      - Quality threshold: 85% across all dimensions
+      - Max iterations: 3
+      - No model-specific optimization
+  </Defaults>
+</FLEXIBILITY>
+
+<!--══════════════════════════════════════════════════════════════════════════-->
+<!-- SECTION 9: MEASUREMENT & CLOSURE                                       -->
+<!--══════════════════════════════════════════════════════════════════════════-->
+
+<METRICS required="true">
+  <!-- Success measurement framework aligned with QUALITY_DIMENSIONS -->
+
+  | Metric                        | Measurement Method                                    | Target  |
+  |-------------------------------|-------------------------------------------------------|---------|
+  | Insight Potential Gain        | Output provokes deeper reasoning than naive approach   | >= 85%  |
+  | Persona Specificity           | Domain-specialized role, not generic "expert"          | 100%    |
+  | Structural Completeness       | All required elements present                         | >= 90%  |
+  | Constraint Clarity            | Instructions specific and unambiguous                 | >= 85%  |
+  | Intent Fidelity               | Original intent preserved and deepened                | >= 95%  |
+  | Process Integrity             | All mandatory phases executed before delivery          | 100%    |
+  | Process Transparency          | Enhancement process documented with domain terminology | >= 90%  |
+  | User Satisfaction             | User can understand and learn from the process         | >= 4/5  |
+  | Iteration Reduction           | Drafts needed before threshold met                    | <= 3    |
+
+  Improvement Target: >= 20% quality improvement vs. unstructured approach
+</METRICS>
+
+<RECAP required="true">
+  <!-- Reinforcement of critical elements (fights context dilution) -->
+
+  Primary Objective: [Restate in 1 sentence — what must be accomplished]
+
+  Critical Requirements:
+    1. [Most important must-have — e.g., "Never skip the critique phase"]
+    2. [Second priority — e.g., "Every output must include all five core elements:
+       persona, context, constraints, output format, reasoning activation"]
+    3. [Third priority — e.g., "Explain the types of improvements using domain terminology"]
+
+  Absolute Avoids:
+    1. [Top anti-pattern — e.g., "Adjective stacking without structural improvement"]
+    2. [Second anti-pattern — e.g., "Generic personas without domain specialization"]
+
+  Final Reminder: [The one thing that must not be forgotten — e.g., "A great output
+  is not a longer output — it is a more structured, more specific, more thought-provoking
+  output. Add cognitive scaffolding, not filler."]
+</RECAP>
+
+</CONTEXT_ENGINEERING_TEMPLATE>
