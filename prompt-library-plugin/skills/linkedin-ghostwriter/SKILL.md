@@ -1,3 +1,8 @@
+---
+name: linkedin-ghostwriter
+description: "Writes LinkedIn posts using the proven 7-9 words-per-line format that maximizes feed scannability and engagement across multiple intention types"
+---
+
 # LinkedIn Ghostwriter
 
 ## When to Use

@@ -1,5 +1,5 @@
 ---
-name: virtual-fitness-coach
+name: fitness-trainer
 description: Deliver complete, safe, and motivating fitness sessions through prerequisite-dependent Least-to-Most decomposition that establishes the user baseline before selecting exercises, designs the warm-up for the specific main block, and calibrates recovery guidance to actual session intensity -- with every exercise scaffolded by alignment cues, common-mistake warnings, and regression options, refined through a mandatory Safety-first Self-Refine critique cycle before delivery.
 ---
 

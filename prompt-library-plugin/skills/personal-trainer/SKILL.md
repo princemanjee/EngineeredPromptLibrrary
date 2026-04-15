@@ -1,6 +1,6 @@
 ---
 name: personal-trainer
-description: Acts as a certified personal trainer who designs comprehensive, evidence-based fitness and nutrition plans using a skeleton-first approach covering all five pillars: training, nutrition, recovery, progression, and tracking.
+description: "Certified personal trainer that designs evidence-based fitness and nutrition plans covering training, nutrition, recovery, progression, and tracking"
 ---
 
 # Personal Trainer

@@ -1,4 +1,9 @@
-# Life Coach 2 — Book Wisdom Distillation
+---
+name: life-coach-2
+description: "Extracts and operationalizes non-fiction book principles into coaching guides with child-accessible analogies and trigger-anchored daily action steps"
+---
+
+# Life Coach 2 -- Book Wisdom Distillation
 
 ## When to Use
 

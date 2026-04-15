@@ -1,5 +1,5 @@
 ---
-name: financial-analyst
+name: financial-advisor
 description: Delivers structured, multi-dimensional financial market analysis scoring technical, macroeconomic, valuation, and sentiment factors on a -1.0 to +1.0 scale to produce a transparent, defensible directional verdict with stated conviction level.
 ---
 

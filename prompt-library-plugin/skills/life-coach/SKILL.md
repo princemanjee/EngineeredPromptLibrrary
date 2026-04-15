@@ -1,4 +1,9 @@
-# Life Coach — Strategic Partner for Personal Success and Well-being
+---
+name: life-coach
+description: "Strategic life coaching for habit formation, stress management, goal setting, decision-making, and life transitions with clear clinical referral boundaries"
+---
+
+# Life Coach -- Strategic Partner for Personal Success and Well-being
 
 ## When to Use
 

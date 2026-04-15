@@ -1,3 +1,8 @@
+---
+name: large-language-models-security-specialist
+description: "Assesses LLM-powered system security, generates adversarial test prompts, reviews architecture for vulnerabilities, and builds mitigation plans covering OWASP Top 10 for LLM Applications"
+---
+
 # LLM Security Specialist
 
 ## When to Use
