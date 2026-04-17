@@ -1,0 +1,898 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<context_engineering_template version="4.0" upgraded_from="3.0">
+
+  <metadata>
+    <revision_persona>Prompt Engineering Architect specializing in LLM instruction design and meta-cognitive frameworks</revision_persona>
+    <changes_summary>Added Principles section for mental models, introduced Input Validation and Error Recovery protocols, added multi-turn prompt guidance, consolidated domain signal duplication between Sections 2 and 8, added Prompt Testing framework, made narrative intros consistent across all sections, added persona behavioral guidance, clarified the unmeasurable convergence rule, restored Objective/Persona sections to universal template form, and added strategy failure modes.</changes_summary>
+    <usage>Start with the Quick-Start Checklist for a minimal viable prompt. For production prompts, copy relevant sections, customize placeholders marked with square brackets, and delete unused optional blocks. Sections marked as required must be present in every production prompt.</usage>
+  </metadata>
+
+  <critique_log from_version="3.0" to_version="4.0">
+
+    <dimensional_scores>
+      <score dimension="Insight Potential" value="82%">
+        Good scaffolding, but no guidance on when reasoning strategies hurt output quality. Not every task benefits from Self-Refine (e.g., brainstorming, freeform creative work). Missing failure modes for each strategy. Also missing any bridge between Quick-Start and the full template for medium-complexity tasks.
+      </score>
+      <score dimension="Persona Specificity" value="88%">
+        Calibration anchors for persona depth are strong. Gap: no guidance on persona behavior under uncertainty, ambiguity, or pushback. A persona is not just what someone knows, it is how they respond when the task is unclear.
+      </score>
+      <score dimension="Structural Completeness" value="85%">
+        Domain Signals still appear in both Section 2 (Context) and Section 8 (Flexibility), creating soft redundancy that v3.0 claimed to eliminate. Missing: Input Validation protocol, multi-turn prompt guidance, and prompt testing framework.
+      </score>
+      <score dimension="Constraint Clarity" value="80%">
+        Conflict Resolution Protocol mixes categories without acknowledging that the hierarchy works differently depending on whether the conflict is factual vs. structural. The convergence rule (less than 5% improvement) is unmeasurable in practice since users have no scoring instrument beyond subjective judgment.
+      </score>
+      <score dimension="Intent Fidelity" value="90%">
+        Solid overall. Slight drift toward being a prompt improvement tool rather than a prompt creation tool. Some sections assume you are enhancing an existing prompt instead of building from scratch.
+      </score>
+      <score dimension="Tone Engagement" value="78%">
+        Why-this-section-matters intros appear in Sections 1, 2, 3, and partially in Section 5, but are absent from Sections 4, 6, 7, 8, and 9. The inconsistency makes the template feel half-edited. No overarching Principles section to give users mental models beyond mechanics.
+      </score>
+      <score dimension="Process Integrity" value="100%">
+        Self-versioning protocol is functional and was followed to produce this version.
+      </score>
+    </dimensional_scores>
+
+    <revisions_applied>
+      <revision number="1">Added Section 0.5: Principles to provide mental models that inform every other section, reducing dependence on rote checklists.</revision>
+      <revision number="2">Added Input Validation protocol (Section 2) so the model knows how to handle malformed, contradictory, or insufficient inputs.</revision>
+      <revision number="3">Added Error Recovery guidance (Section 3) covering what to do when critique identifies unfixable problems or the model misunderstands the task.</revision>
+      <revision number="4">Consolidated Domain Signals into a single authoritative location (Section 2), with Section 8 referencing rather than duplicating them.</revision>
+      <revision number="5">Added multi-turn prompt guidance (Section 7) for conversational and agentic workflows.</revision>
+      <revision number="6">Added Prompt Testing framework (Section 9) so users can validate their completed prompts.</revision>
+      <revision number="7">Made why-this-section-matters intros consistent across all sections.</revision>
+      <revision number="8">Added persona behavioral guidance: how the persona handles uncertainty and edge cases, not just what it knows.</revision>
+      <revision number="9">Clarified the convergence rule with practical measurement heuristics that do not require a scoring instrument.</revision>
+      <revision number="10">Added strategy failure modes to Section 3 so users know when each reasoning approach can backfire.</revision>
+      <revision number="11">Restored Objective and Persona sections to fully generic/universal template form.</revision>
+      <revision number="12">Added a mid-complexity bridge path between Quick-Start and the full template in the Dependency Map.</revision>
+    </revisions_applied>
+
+  </critique_log>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 0: QUICK-START                                           -->
+  <!-- ================================================================ -->
+
+  <section id="0" title="Quick-Start" subtitle="Minimal Viable Prompt">
+
+    <why_this_matters>
+      Most prompts do not need the full template. This section gives you a functional prompt in under five minutes. Use the full template only when the Quick-Start produces inadequate results.
+    </why_this_matters>
+
+    <core_elements>
+      <element position="1" name="ROLE">Who is the AI acting as? (Specific domain role, not "expert")</element>
+      <element position="2" name="CONTEXT">Why does this task exist? Who consumes the output?</element>
+      <element position="3" name="TASK">What is the single concrete deliverable?</element>
+      <element position="4" name="FORMAT">What does the output look like? (Structure, length, markup)</element>
+      <element position="5" name="CRITERIA">What separates great from adequate? (2-3 specific quality markers)</element>
+    </core_elements>
+
+    <minimal_template>
+You are a [specific role with domain expertise].
+
+Context: [Why this task exists. Who will read the output. What they already know.]
+
+Task: [One clear deliverable statement.]
+
+Format: [Structure, markup, length range.]
+
+Quality markers:
+- [Specific quality criterion 1]
+- [Specific quality criterion 2]
+- [Specific quality criterion 3]
+    </minimal_template>
+
+    <escalation_guidance>
+      If your Quick-Start prompt produces output that is structurally right but lacks depth, reasoning quality, or domain specificity, move to the full template. Start with the Required Core sections, then add layers as needed using the Dependency Map.
+    </escalation_guidance>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 0.5: PRINCIPLES                                          -->
+  <!-- ================================================================ -->
+
+  <section id="0.5" title="Principles" subtitle="Mental Models for Prompt Design">
+
+    <why_this_matters>
+      Checklists tell you what to include. Principles tell you why, which means you can adapt when the checklist does not cover your situation. Internalize these five principles and the rest of the template will feel intuitive rather than mechanical.
+    </why_this_matters>
+
+    <principle number="1" name="Specificity compounds">
+      Every vague instruction forces the model to guess. Each guess has a probability of being wrong. When multiple vague instructions appear together, the probabilities of error multiply. A prompt with five vague instructions is not five times as likely to fail as a prompt with one. It is exponentially more likely to fail. Replace vague instructions with specific ones wherever possible.
+    </principle>
+
+    <principle number="2" name="Personas are reasoning lenses, not costumes">
+      Setting a persona does not just change vocabulary. It changes what the model attends to, what it treats as relevant, and what it considers a mistake. "You are a security auditor" makes the model notice attack surfaces. "You are a UX designer" makes the same model notice user friction. Choose personas for what they will notice, not for how they will sound.
+    </principle>
+
+    <principle number="3" name="Structure is a form of reasoning">
+      Asking the model to organize its output into specific sections is not just formatting. It is a way of requiring the model to think about distinct aspects of the problem separately. A prompt that asks for "analysis, then recommendations, then risks" produces different (and typically better) thinking than a prompt that asks for "your thoughts."
+    </principle>
+
+    <principle number="4" name="Constraints liberate">
+      Counter-intuitively, adding well-chosen constraints improves output quality. "Write a 200-word summary" produces better summaries than "summarize this." "Explain this to a first-year graduate student" produces clearer explanations than "explain this clearly." Constraints reduce the space the model has to search and increase the probability that it finds a strong answer.
+    </principle>
+
+    <principle number="5" name="Critique is not polish">
+      The generate-critique-revise cycle is not about making the first draft prettier. It is about finding structural gaps, logical errors, and missing perspectives that the first draft cannot contain because the model had not yet seen its own output when it produced it. If your critique phase only finds surface issues (word choice, tone), your quality dimensions are probably too shallow.
+    </principle>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION DEPENDENCY MAP                                           -->
+  <!-- ================================================================ -->
+
+  <dependency_map>
+
+    <why_this_matters>
+      Including unnecessary sections wastes context window tokens and can actually degrade output by overwhelming the model with irrelevant instructions. This map lets you include only what your task requires.
+    </why_this_matters>
+
+    <layer name="Required Core" requirement="always include">
+      <dependency section="1" name="OBJECTIVE_AND_PERSONA" role="identity and goal" />
+      <dependency section="2" name="CONTEXT" role="situation and domain" />
+      <dependency section="5" name="CONSTRAINTS" role="rules and boundaries" />
+      <dependency section="7" name="RESPONSE_FORMAT" role="output specification" />
+    </layer>
+
+    <layer name="Reasoning Layer" requirement="add when task requires multi-step thinking">
+      <dependency section="3" name="REASONING" depends_on="Section 1, Section 2" />
+    </layer>
+
+    <layer name="Quality Layer" requirement="add when output quality is critical">
+      <dependency section="4" name="QUALITY_DIMENSIONS" depends_on="Section 2 (domain signals)" />
+      <dependency section="6" name="ITERATIVE_PROCESS" depends_on="Section 4" />
+    </layer>
+
+    <layer name="Optional Enhancements" requirement="add as needed">
+      <dependency section="1b" name="SYSTEM_INSTRUCTIONS" depends_on="standalone" />
+      <dependency section="5b" name="TONE_AND_STYLE" depends_on="Section 2 (domain signals)" />
+      <dependency section="5c" name="FEW_SHOT_EXAMPLES" depends_on="Section 4" />
+      <dependency section="8" name="FLEXIBILITY" depends_on="Section 2 (domain signals)" />
+      <dependency section="9" name="METRICS_AND_TESTING" depends_on="Section 4" />
+    </layer>
+
+    <complexity_routing>
+      <route level="Simple" description="single deliverable, clear format" includes="Required Core only" token_cost="200-400" />
+      <route level="Medium" description="needs some reasoning or domain depth" includes="Required Core + Section 3" token_cost="400-800" />
+      <route level="Standard" description="quality matters, iterative refinement needed" includes="Required Core + Reasoning Layer + Quality Layer" token_cost="800-1200" />
+      <route level="Complex" description="multi-step, high-stakes, multi-domain" includes="Full template" token_cost="1200-2000" />
+    </complexity_routing>
+
+    <rule_of_thumb>If your prompt consumes more than 15% of the model's context window, trim optional sections first.</rule_of_thumb>
+
+  </dependency_map>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 1: FOUNDATION                                            -->
+  <!-- ================================================================ -->
+
+  <section id="1" title="Foundation" subtitle="Identity and Objective">
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- SYSTEM INSTRUCTIONS (Optional)                               -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <system_instructions required="false">
+
+      <why_this_matters>
+        System instructions set behavioral rails that persist across the entire conversation. Use them when you need hard boundaries (safety limits, operating mode) that should never be overridden by user messages.
+      </why_this_matters>
+
+      <parameters>
+        <parameter name="Operating Mode">[Standard | Restricted | Expert]</parameter>
+        <parameter name="Knowledge Cutoff Handling">[Acknowledge | Redirect | Proceed with caveat]</parameter>
+        <parameter name="Safety Boundaries">[Define absolute limits: what must never be generated, which topics are off-limits, which behaviors are prohibited]</parameter>
+      </parameters>
+
+      <strategy_declaration>
+        <parameter name="Primary Reasoning Strategy">[Self-Refine | Chain-of-Thought | Tree-of-Thought | ReAct | Meta-Cognitive | Other]</parameter>
+        <parameter name="Strategy Justification">[Why this strategy fits the task, in one sentence]</parameter>
+      </strategy_declaration>
+
+      <self_refine_phases description="Declare these if using Self-Refine">
+        <phase number="1" name="DRAFT">Generate initial output</phase>
+        <phase number="2" name="CRITIQUE">Evaluate draft against quality dimensions</phase>
+        <phase number="3" name="REVISE">Fix every gap the critique identifies</phase>
+        <delivery_rule>Never deliver a first-draft output as final</delivery_rule>
+      </self_refine_phases>
+
+    </system_instructions>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- OBJECTIVE AND PERSONA (Required)                             -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <objective_and_persona required="true">
+
+      <why_this_matters>
+        Without a clear objective, the model optimizes for plausibility rather than usefulness. Without a specialized persona, it defaults to a generic voice that lacks domain depth. Together, these two elements determine the direction and character of everything the model produces.
+      </why_this_matters>
+
+      <objective>
+        <primary_goal>[One clear, measurable outcome statement]</primary_goal>
+        <success_looks_like>[Concrete deliverable description: what the user receives, in what format, with what qualities]</success_looks_like>
+
+        <multi_deliverable_criteria description="Use when the process matters as much as the product">
+          <deliverable type="Primary output">[The main artifact, e.g., "a production-ready API design document"]</deliverable>
+          <deliverable type="Process artifact">[Critique trail, reasoning log, or methodology explanation]</deliverable>
+          <deliverable type="Learning artifact">[Explanation of decisions so the user learns the craft]</deliverable>
+        </multi_deliverable_criteria>
+      </objective>
+
+      <persona>
+        <guidance>The persona is not decoration. It determines vocabulary, reasoning patterns, what the model notices, and what it ignores (see Principle 2). A "Lead Climate Systems Modeler" will flag feedback loops that a generic "scientist" would miss.</guidance>
+
+        <role>[Specific job title or expert type, e.g., "Lead Climate Systems Modeler," "Senior Pediatric Oncology Researcher," "Principal Security Architect"]</role>
+        <identity_traits>[2-4 characteristics, e.g., "analytical, self-critical, educational, precise"]</identity_traits>
+        <anti_traits>[What this persona is NOT, e.g., "not generic, not verbose, not deferential"]</anti_traits>
+
+        <expanded_expertise description="Use for complex or cross-domain tasks">
+          <domain_expertise>[Primary field and specific sub-specializations]</domain_expertise>
+          <methodological_expertise>[Frameworks, techniques, or approaches mastered]</methodological_expertise>
+          <cross_domain_expertise>[Adjacent fields that inform the primary domain]</cross_domain_expertise>
+          <behavioral_expertise>[Understanding of how AI models respond to different prompt structures, if applicable]</behavioral_expertise>
+        </expanded_expertise>
+
+        <behavioral_guidance description="Defines how the persona acts under ambiguity, not just what it knows">
+          <behavior situation="Ambiguous input">[e.g., "State the ambiguity explicitly, declare the chosen interpretation, proceed, and flag the assumption at the end"]</behavior>
+          <behavior situation="Insufficient information">[e.g., "Identify exactly what is missing, explain why it matters, and provide a conditional answer: 'If X, then Y; if Z, then W'"]</behavior>
+          <behavior situation="Conflicting requirements">[e.g., "Apply the Conflict Resolution Protocol (Section 5), document the conflict and the resolution in the output"]</behavior>
+          <behavior situation="Edge case or boundary condition">[e.g., "Flag it as an edge case, provide the best available answer, and note the confidence level"]</behavior>
+          <behavior situation="Pushback from user">[e.g., "Defend the reasoning with evidence, but update the position if the user provides new information that changes the analysis"]</behavior>
+        </behavioral_guidance>
+      </persona>
+
+    </objective_and_persona>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 2: CONTEXT                                               -->
+  <!-- ================================================================ -->
+
+  <section id="2" title="Context" subtitle="Situation and Domain">
+
+    <why_this_matters>
+      Context determines how the model interprets ambiguity. The same instruction ("make it more concise") means different things in a legal brief vs. a tweet. Without explicit context, the model guesses, and guesses compound (see Principle 1).
+    </why_this_matters>
+
+    <context required="true">
+      <background>[Why this task exists; relevant history; what problem it solves]</background>
+      <domain>[Industry, field, or subject area. Be specific: "pediatric oncology research" not "healthcare"]</domain>
+      <target_audience>[Who consumes the output; their expertise level; what they need to learn vs. already know]</target_audience>
+      <inputs_provided>[Documents, data, or artifacts available. List each with its role in the task.]</inputs_provided>
+    </context>
+
+    <domain_signals authoritative="true" description="Single source of truth for domain-adaptive behavior. Section 8 references these signals but does not redefine them.">
+
+      <guidance>These signals determine how critique, enhancement, and tone adapt to different content types. The model should detect the domain automatically from context, but you can declare it explicitly when the domain is non-obvious or when you want to override the default behavior.</guidance>
+
+      <domain type="Technical/Code">
+        <critique_focus>Edge-case coverage, I/O spec, error handling, architecture, performance</critique_focus>
+        <tone_adaptation>Precision-focused, architecture-aware</tone_adaptation>
+        <common_failure_modes>Over-abstraction, missing error paths, untested assumptions</common_failure_modes>
+      </domain>
+
+      <domain type="Creative/Writing">
+        <critique_focus>Sensory depth, subtext, stylistic constraints, voice consistency, evocative framing</critique_focus>
+        <tone_adaptation>Evocative, stylistically-aware</tone_adaptation>
+        <common_failure_modes>Generic descriptions, telling instead of showing, inconsistent voice</common_failure_modes>
+      </domain>
+
+      <domain type="Research/Factual">
+        <critique_focus>Source requirements, verification, citation format, bias awareness, methodological rigor</critique_focus>
+        <tone_adaptation>Rigorous, evidence-focused</tone_adaptation>
+        <common_failure_modes>Unsupported claims, citation gaps, confirmation bias</common_failure_modes>
+      </domain>
+
+      <domain type="Teaching/Advisory">
+        <critique_focus>Audience calibration, prerequisite assumptions, progressive complexity, success metrics</critique_focus>
+        <tone_adaptation>Scaffolded, progressively complex</tone_adaptation>
+        <common_failure_modes>Assuming too much prior knowledge, no verification of understanding</common_failure_modes>
+      </domain>
+
+      <domain type="Custom">
+        <critique_focus>[Custom critique focus]</critique_focus>
+        <tone_adaptation>[Custom tone]</tone_adaptation>
+        <common_failure_modes>[Custom failure modes]</common_failure_modes>
+      </domain>
+
+    </domain_signals>
+
+    <input_validation_protocol description="What should the model do when the inputs are problematic? Define this upfront so the model does not silently proceed with bad data.">
+      <rule condition="Missing required input">[e.g., "Name the missing input, explain its importance, and ask for it before proceeding" | "Proceed with stated assumptions"]</rule>
+      <rule condition="Contradictory inputs">[e.g., "Identify the contradiction, present both interpretations, and ask which to follow" | "Apply Conflict Resolution Protocol"]</rule>
+      <rule condition="Malformed or corrupted input">[e.g., "Describe what appears to be wrong, attempt to salvage usable content, and flag the uncertainty"]</rule>
+      <rule condition="Input exceeds scope">[e.g., "Acknowledge the full input, explicitly state which portion falls within scope, and proceed with the in-scope portion only"]</rule>
+    </input_validation_protocol>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 3: REASONING                                             -->
+  <!-- ================================================================ -->
+
+  <section id="3" title="Reasoning" subtitle="Cognitive Scaffolding">
+
+    <why_this_matters>
+      Reasoning scaffolding does not just improve output quality. It changes what kind of output is possible (see Principle 3). Chain-of-thought enables multi-step logic. Tree-of-thought enables comparison of alternatives. Self-Refine enables quality convergence. Without scaffolding, the model produces its best first-pass guess, which is often adequate but rarely excellent.
+    </why_this_matters>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- CHAIN OF THOUGHT                                             -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <chain_of_thought role="Default reasoning pattern">
+
+      <parameters>
+        <parameter name="Activation">[Always | On complexity threshold | On request]</parameter>
+        <parameter name="Visibility">[Show reasoning | Hide reasoning | Summarize only | Show critique trail as part of output]</parameter>
+      </parameters>
+
+      <pattern>
+        <step name="OBSERVE">What information is present? What is the core intent?</step>
+        <step name="ANALYZE">What patterns, relationships, gaps, implications exist?</step>
+        <step name="DRAFT">Generate initial output incorporating analysis</step>
+        <step name="CRITIQUE">Score against quality dimensions and identify specific gaps</step>
+        <step name="REVISE">Fix each gap with targeted improvements</step>
+        <step name="CONCLUDE">Deliver justified, audited answer</step>
+      </pattern>
+
+      <failure_modes>On simple factual lookups or short creative tasks, explicit reasoning steps can make the model overthink, producing hedged or over-qualified output. If the task has one clear answer and no ambiguity, skip the scaffolding.</failure_modes>
+
+    </chain_of_thought>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- TREE OF THOUGHT                                              -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <tree_of_thought required="false" role="Use when multiple valid approaches exist">
+
+      <parameters>
+        <parameter name="Trigger">[When multiple valid approaches exist and the best path is non-obvious]</parameter>
+        <parameter name="Depth">[Levels of sub-branching allowed: 1-3]</parameter>
+      </parameters>
+
+      <process>
+        <branch id="1">[Approach A with description]</branch>
+        <branch id="2">[Approach B with description]</branch>
+        <branch id="3">[Approach C with description]</branch>
+        <evaluation criteria="feasibility, quality, efficiency, alignment, insight potential, structural completeness" />
+        <selection>[Best branch with justification]</selection>
+      </process>
+
+      <failure_modes>When one approach is clearly superior and alternatives are artificial. Forcing three branches when only one is viable wastes tokens and can cause the model to argue for weak alternatives to fill the structure.</failure_modes>
+
+    </tree_of_thought>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- SELF-REFINE (Authoritative Definition)                       -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <self_refine authoritative="true" description="Single source of truth for the generate-critique-revise cycle. All other sections reference this definition.">
+
+      <parameters>
+        <parameter name="Trigger">[Always | When output quality is critical | When first draft is likely insufficient]</parameter>
+        <parameter name="Max Cycles">[2-3]</parameter>
+        <parameter name="Quality Threshold">[See Section 4 for calibrated thresholds]</parameter>
+        <parameter name="Delivery Rule">[Never deliver output from step 1 as final]</parameter>
+      </parameters>
+
+      <cycle>
+        <step number="1" name="GENERATE">
+          Produce initial output using all available context and the persona's expertise.
+        </step>
+        <step number="2" name="CRITIQUE">
+          <instruction>Evaluate against QUALITY_DIMENSIONS (Section 4).</instruction>
+          <sub_step>Score each dimension using the calibrated anchors.</sub_step>
+          <sub_step>Document findings: [CRITIQUE FINDINGS: ...]</sub_step>
+          <sub_step>For each gap, write a specific, actionable fix (not "improve this" but "replace the generic persona 'data expert' with 'Senior Quantitative Risk Analyst specializing in credit derivatives'").</sub_step>
+        </step>
+        <step number="3" name="REVISE">
+          <sub_step>Replace generic elements with domain-specialized alternatives.</sub_step>
+          <sub_step>Add missing structural elements.</sub_step>
+          <sub_step>Sharpen vague instructions into specific, actionable directives.</sub_step>
+          <sub_step>Remove additions that add length without cognitive value.</sub_step>
+          <sub_step>Document changes: [REVISIONS APPLIED: ...]</sub_step>
+        </step>
+        <step number="4" name="VALIDATE">
+          Re-score all dimensions. If all are at or above threshold, proceed to delivery. Otherwise, repeat from step 2. Do not exceed Max Cycles.
+        </step>
+      </cycle>
+
+      <failure_modes>On creative/generative tasks where iteration can sand away the distinctive edges that made the first draft interesting. On brainstorming tasks where "wrong" ideas are valuable. On time-sensitive tasks where two good-enough outputs outperform one polished output delivered late. Consider setting the trigger to "When output quality is critical" rather than "Always."</failure_modes>
+
+      <convergence_heuristics description="Practical signals that the output has converged, replacing the unmeasurable 5% rule">
+        <signal>The revision changes only surface-level wording, not structure or substance.</signal>
+        <signal>The critique identifies no issues that would change the user's experience of the output.</signal>
+        <signal>You find yourself adding hedging language rather than fixing actual gaps.</signal>
+        <signal>The revision introduces new problems at the same rate it fixes old ones.</signal>
+        <guidance>If any of these signals appear, the output has converged. Further iteration risks over-processing.</guidance>
+      </convergence_heuristics>
+
+    </self_refine>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- ERROR RECOVERY PROTOCOL                                      -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <error_recovery_protocol description="What should the model do when the reasoning process itself breaks down?">
+      <recovery failure_mode="Critique identifies a fundamental misunderstanding of the task">
+        Stop the cycle. Restate your understanding of the task. Ask the user to confirm or correct before continuing.
+      </recovery>
+      <recovery failure_mode="Critique finds a problem that cannot be fixed within the current constraints">
+        Flag the constraint as blocking. Explain what would need to change to fix the problem. Deliver the best possible output with the limitation noted.
+      </recovery>
+      <recovery failure_mode="Revision degrades quality on one dimension while improving another">
+        Document the tradeoff explicitly. Choose the option that best serves the stated Primary Goal (Section 1). Note what was sacrificed and why.
+      </recovery>
+      <recovery failure_mode="The model is uncertain whether the output meets the threshold">
+        Default to delivering with a confidence note rather than iterating further. Over-iteration under uncertainty produces progressively more generic output.
+      </recovery>
+    </error_recovery_protocol>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 4: QUALITY                                               -->
+  <!-- ================================================================ -->
+
+  <section id="4" title="Quality" subtitle="Dimensions and Calibration">
+
+    <why_this_matters>
+      Without explicit quality dimensions, the critique phase defaults to "does this look good?" which is too vague to produce systematic improvement. Dimensions force the critique to examine specific facets of quality independently, which catches gaps that holistic review misses.
+    </why_this_matters>
+
+    <calibration_note>A score of 85% is meaningless without anchors. Two people scoring the same output will disagree by 20+ points unless they share concrete reference points. The anchors below make scoring reproducible. When scoring subjectively, use the anchors as comparisons: "Is this output closer to the 60% example or the 95% example?"</calibration_note>
+
+    <quality_dimensions required="true" condition="Required when using Self-Refine">
+
+      <dimension name="Insight Potential" threshold="85%">
+        <definition>Does the output force deeper, more specific reasoning than a naive approach? Would it produce meaningfully different results?</definition>
+        <anchor level="60%">Output rephrases the request with generic instructions.</anchor>
+        <anchor level="80%">Output adds domain-specific structure that a non-expert would miss.</anchor>
+        <anchor level="95%">Output introduces a reasoning framework or constraint that fundamentally changes the quality of downstream results.</anchor>
+      </dimension>
+
+      <dimension name="Persona Specificity" threshold="100%">
+        <definition>Is the persona a specialized domain role with named expertise, not a generic "expert"? Does it include behavioral guidance?</definition>
+        <anchor level="60%">"You are an expert in data."</anchor>
+        <anchor level="80%">"You are a Senior Data Engineer."</anchor>
+        <anchor level="95%">"You are a Senior Data Engineer specializing in real-time streaming pipelines on Apache Flink, with 8 years of experience debugging backpressure in high-throughput systems. When you encounter ambiguous requirements, you ask clarifying questions before designing."</anchor>
+      </dimension>
+
+      <dimension name="Structural Completeness" threshold="90%">
+        <definition>Are all required elements present: persona, context, constraints, output format, reasoning activation?</definition>
+        <anchor level="60%">Has persona and task only.</anchor>
+        <anchor level="80%">Has all five Quick-Start elements but lacks depth.</anchor>
+        <anchor level="95%">All elements present with domain-specific detail, plus reasoning scaffolding and quality criteria.</anchor>
+      </dimension>
+
+      <dimension name="Constraint Clarity" threshold="85%">
+        <definition>Are all instructions specific enough to be followed unambiguously? No vague qualifiers like "be detailed"?</definition>
+        <anchor level="60%">"Write a good analysis."</anchor>
+        <anchor level="80%">"Write a 500-word analysis covering causes, impacts, and recommendations."</anchor>
+        <anchor level="95%">"Write a 500-word analysis of Q3 revenue decline. Structure: root cause (with data), downstream impact on three business units, and two actionable recommendations each with estimated ROI."</anchor>
+      </dimension>
+
+      <dimension name="Intent Fidelity" threshold="95%">
+        <definition>Does the output preserve and deepen the original intent without redirecting to a different task?</definition>
+        <anchor level="60%">Output addresses a related but different task.</anchor>
+        <anchor level="80%">Output addresses the right task but adds tangential sections.</anchor>
+        <anchor level="95%">Every element directly serves the original intent, and enhancements deepen it rather than broadening it.</anchor>
+      </dimension>
+
+      <dimension name="Tone Engagement" threshold="80%">
+        <definition>Is the output clear, well-suited to its audience, and purposeful? Does it serve the reader or just the structure?</definition>
+        <anchor level="60%">Reads like a compliance form.</anchor>
+        <anchor level="80%">Clear and professional, with occasional domain-specific personality.</anchor>
+        <anchor level="95%">Reads like it was written by someone who cares about the craft and wants the reader to succeed.</anchor>
+      </dimension>
+
+      <dimension name="Process Integrity" threshold="100%">
+        <definition>Were all mandatory phases executed? Was the critique phase completed before delivery?</definition>
+        <anchor level="binary">Either all phases ran, or they did not.</anchor>
+      </dimension>
+
+      <dimension name="Custom" threshold="[Target]">
+        <definition>[Definition]</definition>
+        <anchor level="60%">[Low-quality example]</anchor>
+        <anchor level="80%">[Adequate example]</anchor>
+        <anchor level="95%">[Excellent example]</anchor>
+      </dimension>
+
+    </quality_dimensions>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 5: CONSTRAINTS                                           -->
+  <!-- ================================================================ -->
+
+  <section id="5" title="Constraints" subtitle="Rules, Tone, and Examples">
+
+    <why_this_matters>
+      Constraints define the boundaries within which the model operates (see Principle 4). Well-chosen constraints reduce the search space and increase output quality. Poorly chosen constraints create contradictions that the model resolves silently and unpredictably.
+    </why_this_matters>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- CONSTRAINTS (Required)                                       -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <constraints required="true">
+
+      <dos>
+        <rule>[Required behavior or inclusion 1]</rule>
+        <rule>[Required behavior or inclusion 2]</rule>
+        <rule>[Mandatory standard to maintain]</rule>
+        <rule>Follow the Self-Refine cycle (Section 3) strictly when activated. Never skip the critique phase.</rule>
+        <rule>State assumptions explicitly when inputs are ambiguous.</rule>
+        <rule>Preserve the user's original intent. Enhance, do not redirect.</rule>
+        <rule>Apply the Input Validation Protocol (Section 2) when inputs are problematic.</rule>
+        <rule>Apply the Error Recovery Protocol (Section 3) when the reasoning process breaks down.</rule>
+      </dos>
+
+      <donts>
+        <rule>[Prohibited action or content 1]</rule>
+        <rule>[Prohibited action or content 2]</rule>
+        <rule>[Anti-pattern to avoid]</rule>
+        <rule>Do not add synonyms, filler phrases, or verbose qualifiers that increase length without adding structural complexity or cognitive depth.</rule>
+        <rule>Do not use generic personas without domain specialization.</rule>
+        <rule>Do not skip the internal critique phase for any output.</rule>
+        <rule>Do not add constraints that conflict with each other (see Conflict Resolution below).</rule>
+        <rule>Do not silently resolve ambiguity. Make your interpretation visible.</rule>
+      </donts>
+
+      <conflict_resolution_protocol>
+        <guidance>When constraints contradict each other, resolve using this priority hierarchy. The levels are ordered by scope: broader protective boundaries override narrower operational preferences.</guidance>
+        <priority level="1" name="Safety boundaries" source="Section 1 SYSTEM_INSTRUCTIONS">Override everything. These are non-negotiable limits on what can be generated.</priority>
+        <priority level="2" name="Intent fidelity" source="user request">What the user actually asked for overrides structural rules. The template serves the user's goal, not itself.</priority>
+        <priority level="3" name="Domain conventions" source="target field">How the target field actually operates overrides generic best practices.</priority>
+        <priority level="4" name="Explicit constraints" source="prompt text">What the user wrote takes precedence over what you think they meant.</priority>
+        <priority level="5" name="Specific over general">When two constraints at the same priority level conflict, the more specific one wins.</priority>
+        <unresolvable_conflicts>When a conflict cannot be resolved by this hierarchy, flag the conflict in the output and present both options with a recommendation rather than silently choosing one side.</unresolvable_conflicts>
+      </conflict_resolution_protocol>
+
+      <boundaries>
+        <scope in_scope="[...]" out_of_scope="[...]" />
+        <length>[Min-Max words/tokens]</length>
+        <time_sensitivity>[If applicable]</time_sensitivity>
+      </boundaries>
+
+      <token_budget_guidance>
+        <budget complexity="Quick-Start only" token_cost="100-200" recommended_for="Simple, well-defined tasks" />
+        <budget complexity="Required Core sections" token_cost="300-600" recommended_for="Standard tasks with clear domains" />
+        <budget complexity="Core + Reasoning layer" token_cost="600-1000" recommended_for="Tasks requiring multi-step thinking" />
+        <budget complexity="Core + Quality layer" token_cost="800-1200" recommended_for="Tasks where output quality is critical" />
+        <budget complexity="Full template" token_cost="1200-2000" recommended_for="Complex, high-stakes, multi-domain tasks" />
+        <estimation_heuristic>As a rough heuristic, 1 token is approximately 4 characters or 0.75 words in English. Most text editors can show word count; multiply by 1.33 for an approximate token count.</estimation_heuristic>
+      </token_budget_guidance>
+
+    </constraints>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- TONE AND STYLE (Optional)                                    -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <tone_and_style required="false">
+
+      <why_this_matters>
+        Tone is not just about how the output sounds. It affects how the audience receives and trusts the information. A rigorous research tone builds credibility with academics. A conversational tone reduces friction for non-experts. Mismatched tone undermines even correct content.
+      </why_this_matters>
+
+      <parameters>
+        <voice>[Formal | Professional | Conversational | Technical | Friendly]</voice>
+        <register>[Academic | Business | Casual | Instructional]</register>
+        <personality>[e.g., "methodical and precise in analysis, genuinely enthusiastic about the craft"]</personality>
+      </parameters>
+
+      <domain_adaptive_tone_shifting>
+        <guidance>Tone adaptation rules are defined in the Domain Signals table (Section 2). Override them here only if you need behavior that differs from the domain default.</guidance>
+        <override condition="[Condition]">[Custom tone shift]</override>
+        <override condition="User requests minimal output">Essential additions only; note what was intentionally omitted</override>
+      </domain_adaptive_tone_shifting>
+
+    </tone_and_style>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- FEW-SHOT EXAMPLES (Optional)                                 -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <few_shot_examples required="false" impact="high">
+
+      <why_this_matters>
+        A single good example communicates more about desired output quality than ten lines of abstract instructions. Examples ground abstract quality dimensions in concrete reality. Prioritize one strong positive example over multiple mediocre ones.
+      </why_this_matters>
+
+      <positive_example>
+        <input>[Sample input demonstrating a common case]</input>
+        <output>[Ideal response matching all requirements. If Self-Refine is active, include the critique trail and process explanation.]</output>
+        <why_this_works>[Reference specific QUALITY_DIMENSIONS that are satisfied and explain how]</why_this_works>
+      </positive_example>
+
+      <edge_case_example required="false">
+        <input>[Tricky or boundary-testing input]</input>
+        <output>[Correct handling of the edge case]</output>
+        <why_this_works>[How domain adaptation shifted the critique focus, how ambiguity was resolved]</why_this_works>
+      </edge_case_example>
+
+      <anti_example required="false">
+        <input>[Input that might cause errors or trigger anti-patterns]</input>
+        <wrong_output>[What to avoid, e.g., adjective stacking, skipped critique, generic persona, length without structure]</wrong_output>
+        <right_output>[Correct alternative with specific improvements noted]</right_output>
+        <why_its_wrong>[Which QUALITY_DIMENSIONS the wrong output violates and why]</why_its_wrong>
+      </anti_example>
+
+    </few_shot_examples>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 6: ITERATION                                             -->
+  <!-- ================================================================ -->
+
+  <section id="6" title="Iteration" subtitle="Refinement Loop">
+
+    <why_this_matters>
+      This section configures the Self-Refine cycle defined in Section 3. It does not redefine the cycle. It sets the operational parameters (how many iterations, when to stop, when to ask for feedback) that govern how the cycle runs for this specific prompt.
+    </why_this_matters>
+
+    <iterative_process required="true" condition="Required when using Self-Refine">
+
+      <parameters>
+        <parameter name="Max Iterations">[2-3. Enough for quality convergence, not so many the output becomes over-processed.]</parameter>
+        <parameter name="Quality Threshold">[Default: 85% across all dimensions. Customize per task using the calibration anchors in Section 4.]</parameter>
+        <parameter name="Convergence Rule">[Stop early when observable convergence signals appear. See Section 3 convergence_heuristics for specific signals.]</parameter>
+        <parameter name="User Checkpoints">[After iteration N, pause for feedback: Yes/No]</parameter>
+        <parameter name="Delivery Rule">[Never deliver the output of step 1 as final without completing step 2+]</parameter>
+      </parameters>
+
+      <pre_delivery_checklist>
+        <check>All mandatory phases executed (generate-critique-revise)</check>
+        <check>All QUALITY_DIMENSIONS at or above threshold</check>
+        <check>Output adds cognitive depth, not just length</check>
+        <check>All required structural elements present</check>
+        <check>Persona is domain-specialized, not generic</check>
+        <check>Persona behavioral guidance was followed for any ambiguity encountered</check>
+        <check>Original intent preserved and deepened, not redirected</check>
+        <check>Process documentation included and accurate</check>
+        <check>No conflicting or redundant constraints (or conflicts are flagged per the Conflict Resolution Protocol)</check>
+        <check>Input Validation Protocol was applied if inputs were problematic</check>
+        <check>Factual accuracy verified</check>
+        <check>Format matches specification</check>
+        <check>Tone consistent throughout</check>
+      </pre_delivery_checklist>
+
+      <final_pass_actions>
+        <action>Verify output reads as a coherent instruction set, not a disjointed list.</action>
+        <action>Remove redundancy while preserving structural completeness.</action>
+        <action>Confirm critique trail accurately reflects changes made.</action>
+        <action>Ensure domain-specific terminology is used correctly.</action>
+        <action>Add summary if output length exceeds 800 words.</action>
+      </final_pass_actions>
+
+    </iterative_process>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 7: OUTPUT                                                -->
+  <!-- ================================================================ -->
+
+  <section id="7" title="Output" subtitle="Format and Delivery">
+
+    <why_this_matters>
+      Format is not cosmetic. It determines whether the audience can find, parse, and act on the information you are delivering (see Principle 3). A perfect analysis in the wrong format is a failed deliverable.
+    </why_this_matters>
+
+    <response_format required="true">
+
+      <parameters>
+        <structure>[Narrative | Sectioned | Bullet-list | Hybrid]</structure>
+        <markup>[Markdown | Plain | HTML | JSON | Code | XML]</markup>
+        <length_target>[X-Y words. See Complexity-Scaled Length Guidance below.]</length_target>
+      </parameters>
+
+      <process_inclusive_template description="Use when Self-Refine is active and the process is part of the deliverable">
+        <section_template name="Draft / Initial Output">Content with annotations showing what was added and why</section_template>
+        <section_template name="Critique">Specific issues identified, each with ISSUE and FIX sub-items</section_template>
+        <section_template name="Final Output">Iterations: [N] followed by production-ready output</section_template>
+        <section_template name="Process Summary">Numbered list of improvement types applied with domain terminology</section_template>
+      </process_inclusive_template>
+
+      <complexity_scaled_length>
+        <tier complexity="Simple" output_length="50-150 words" total_with_process="200-400 words" />
+        <tier complexity="Standard" output_length="150-500 words" total_with_process="400-700 words" />
+        <tier complexity="Complex" output_length="500+ words (justify if exceeding)" total_with_process="700-1000+ words" />
+      </complexity_scaled_length>
+
+    </response_format>
+
+    <multi_turn_guidance required="false" description="For conversational and agentic workflows">
+
+      <why_this_matters>
+        The rest of this template assumes single-shot prompts (one input, one output). If your prompt will be used in a multi-turn conversation or an agentic loop, these additional considerations prevent state loss and scope drift.
+      </why_this_matters>
+
+      <state_management>
+        Decide what the model needs to remember across turns. Include a [CONVERSATION STATE: ...] block that specifies which information persists and which resets.
+      </state_management>
+
+      <instruction_scope>
+        Instructions in SYSTEM_INSTRUCTIONS persist across all turns. Instructions in CONTEXT or CONSTRAINTS may need to be restated or summarized if the conversation exceeds the model's effective attention span (typically the last ~4000 tokens in long conversations).
+      </instruction_scope>
+
+      <escalation_and_handoff>
+        Define when the model should stop iterating autonomously and return control to the user. Common triggers: confidence drops below a threshold, the task scope changes mid-conversation, or the model encounters information it cannot verify.
+      </escalation_and_handoff>
+
+      <agentic_loops>
+        If the model is calling tools or executing actions, define the maximum number of autonomous steps before requiring user confirmation. Include rollback instructions for when an action produces unexpected results.
+      </agentic_loops>
+
+    </multi_turn_guidance>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 8: FLEXIBILITY                                           -->
+  <!-- ================================================================ -->
+
+  <section id="8" title="Flexibility" subtitle="Adaptation and Overrides">
+
+    <why_this_matters>
+      No template can anticipate every situation. This section defines how the model should adapt when the task does not fit the default structure. It references Domain Signals (Section 2) for domain-adaptive behavior and adds override mechanisms for user customization.
+    </why_this_matters>
+
+    <flexibility required="false">
+
+      <conditional_logic>
+        <guidance>Domain-adaptive critique and tone rules are defined in the Domain Signals table (Section 2). The conditions below cover situations outside domain adaptation.</guidance>
+        <condition trigger="User requests minimal output" action="Provide only highest-impact additions; note what was intentionally omitted" />
+        <condition trigger="Ambiguity would lead to fundamentally different outputs" action="Ask ONE clarifying question before proceeding" />
+        <condition trigger="User specifies target model" action="Note model-specific optimization considerations in process summary" />
+        <condition trigger="Task is simple enough that Self-Refine would over-process it" action="Use Quick-Start structure; skip the critique cycle" />
+        <condition trigger="Input fails validation (see Section 2)" action="Apply Input Validation Protocol before proceeding" />
+        <condition trigger="Reasoning process breaks down" action="Apply Error Recovery Protocol (Section 3)" />
+      </conditional_logic>
+
+      <user_overrides>
+        <adjustable_parameters>enhancement-depth (minimal|standard|comprehensive), target-domain, output-style (output-only|full-process), max-length, quality-threshold, max-iterations, formality, focus-areas</adjustable_parameters>
+        <syntax>Override: [parameter]=[value]</syntax>
+      </user_overrides>
+
+      <defaults description="Applied when unspecified">
+        <default parameter="enhancement-depth">standard</default>
+        <default parameter="target-domain">inferred from content via Domain Signals (Section 2)</default>
+        <default parameter="output-style">full-process (Draft + Critique + Final + Process Summary)</default>
+        <default parameter="quality-threshold">85% across all dimensions</default>
+        <default parameter="max-iterations">3</default>
+        <default parameter="model-optimization">none</default>
+      </defaults>
+
+    </flexibility>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 9: MEASUREMENT, TESTING, AND CLOSURE                     -->
+  <!-- ================================================================ -->
+
+  <section id="9" title="Measurement, Testing, and Closure">
+
+    <why_this_matters>
+      Metrics tell you whether your prompt is working. Testing tells you whether it works reliably across different inputs, not just the one you had in mind when you wrote it. Without both, you are guessing about prompt quality.
+    </why_this_matters>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- METRICS (Required for production prompts)                    -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <metrics required="true" condition="Required for production prompts">
+      <metric name="Insight Potential Gain" method="Output provokes deeper reasoning than naive approach" target=">= 85%" />
+      <metric name="Persona Specificity" method="Domain-specialized role with behavioral guidance, not generic 'expert'" target="100%" />
+      <metric name="Structural Completeness" method="All required elements present" target=">= 90%" />
+      <metric name="Constraint Clarity" method="Instructions specific and unambiguous" target=">= 85%" />
+      <metric name="Intent Fidelity" method="Original intent preserved and deepened" target=">= 95%" />
+      <metric name="Process Integrity" method="All mandatory phases executed before delivery" target="100%" />
+      <metric name="Process Transparency" method="Enhancement process documented with domain terminology" target=">= 90%" />
+      <metric name="User Satisfaction" method="User can understand and learn from the process" target=">= 4/5" />
+      <metric name="Iteration Reduction" method="Drafts needed before threshold met" target="&lt;= 3" />
+      <improvement_target>At least 20% quality improvement vs. unstructured approach</improvement_target>
+    </metrics>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- PROMPT TESTING (Recommended)                                 -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <prompt_testing required="false" recommendation="Recommended for production prompts">
+
+      <test type="Variation testing">
+        Run the prompt with 3-5 different inputs that represent the range of expected use cases. Verify the output quality is consistent, not just good for the input you wrote the prompt around.
+      </test>
+
+      <test type="Edge case testing">
+        Run the prompt with at least one input that is at the boundary of scope (e.g., minimal input, maximum complexity, ambiguous phrasing). Verify the model handles it gracefully per the Input Validation Protocol.
+      </test>
+
+      <test type="Adversarial testing">
+        Run the prompt with one input designed to confuse or misdirect (e.g., contradictory instructions, off-topic content embedded in valid input). Verify the model does not silently produce garbage.
+      </test>
+
+      <test type="Regression testing">
+        After modifying any section of the prompt, re-run at least 2 of your original test cases to verify the change did not degrade previously working behavior.
+      </test>
+
+      <what_to_look_for>
+        <signal>Does the persona hold consistently, or does it drift toward generic?</signal>
+        <signal>Are constraints followed across all test cases, or only the easy ones?</signal>
+        <signal>Does the output format match the specification every time?</signal>
+        <signal>When the model encounters ambiguity, does it follow the behavioral guidance or revert to defaults?</signal>
+      </what_to_look_for>
+
+    </prompt_testing>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- RECAP (Required)                                             -->
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+    <recap required="true">
+      <primary_objective>[Restate in 1 sentence: what must be accomplished]</primary_objective>
+
+      <critical_requirements>
+        <requirement priority="1">[Most important must-have, e.g., "Never skip the critique phase"]</requirement>
+        <requirement priority="2">[Second priority, e.g., "Every output must include all five core elements: persona, context, constraints, output format, reasoning activation"]</requirement>
+        <requirement priority="3">[Third priority, e.g., "Explain the types of improvements using domain terminology"]</requirement>
+      </critical_requirements>
+
+      <absolute_avoids>
+        <avoid priority="1">[Top anti-pattern, e.g., "Adjective stacking without structural improvement"]</avoid>
+        <avoid priority="2">[Second anti-pattern, e.g., "Generic personas without domain specialization"]</avoid>
+      </absolute_avoids>
+
+      <final_reminder>[The one thing that must not be forgotten, e.g., "A great output is not a longer output. It is a more structured, more specific, more thought-provoking output. Add cognitive scaffolding, not filler."]</final_reminder>
+    </recap>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- APPENDICES                                                       -->
+  <!-- ================================================================ -->
+
+  <appendix id="A" title="Self-Versioning Protocol">
+    <description>This template is designed to be improved using its own methodology.</description>
+    <steps>
+      <step number="1">Treat the current template as the input to the OBJECTIVE_AND_PERSONA + CONTEXT sections.</step>
+      <step number="2">Set the persona to "Prompt Engineering Architect specializing in LLM instruction design and meta-cognitive frameworks."</step>
+      <step number="3">Run the Self-Refine cycle (Section 3) against the QUALITY_DIMENSIONS (Section 4), scoring the template itself.</step>
+      <step number="4">Document the critique log at the top of the new version, following the format established in the Critique Log section.</step>
+      <step number="5">Apply revisions and increment the version number.</step>
+      <step number="6">Run at least Variation and Edge Case testing (Section 9) on the revised template by applying it to two different prompt-building tasks and verifying the output quality.</step>
+    </steps>
+    <guarantee>This ensures each version of the template is an auditable improvement over the last, with explicit reasoning for every change.</guarantee>
+  </appendix>
+
+  <appendix id="B" title="Version History">
+    <version number="1.0">
+      <changes>Initial template</changes>
+      <dimensions_improved>Baseline</dimensions_improved>
+    </version>
+    <version number="2.0">
+      <changes>Added Self-Refine methodology, dimensional scoring, domain-adaptive critique, cognitive scaffolding</changes>
+      <dimensions_improved>Insight Potential, Process Integrity</dimensions_improved>
+    </version>
+    <version number="3.0">
+      <changes>Consolidated critique-revise redundancy, added Quick-Start, calibrated scoring anchors, added conflict resolution, token budget guidance, self-versioning protocol</changes>
+      <dimensions_improved>Structural Completeness, Constraint Clarity, Process Integrity, Tone Engagement</dimensions_improved>
+    </version>
+    <version number="4.0">
+      <changes>Added Principles section, Input Validation, Error Recovery, multi-turn guidance, Prompt Testing, persona behavioral guidance, strategy failure modes, consolidated domain signal duplication, restored universal template form</changes>
+      <dimensions_improved>Insight Potential, Persona Specificity, Structural Completeness, Constraint Clarity, Tone Engagement</dimensions_improved>
+    </version>
+  </appendix>
+
+</context_engineering_template>
